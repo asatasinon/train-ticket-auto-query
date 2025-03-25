@@ -3,7 +3,8 @@ import requests
 import logging
 import time
 import random
-from .utils import *
+from utils import *
+from config import BASE_URL, USERNAME, PASSWORD, DEFAULT_DATE, PLACE_PAIRS
 
 logger = logging.getLogger("auto-queries")
 datestr = time.strftime("%Y-%m-%d", time.localtime())
@@ -14,8 +15,15 @@ class Query:
     train-ticket query class
     """
 
-    def __init__(self, ts_address: str) -> None:
-        self.address = ts_address
+    def __init__(self, ts_address: str = None) -> None:
+        """
+        初始化查询类
+        
+        Args:
+            ts_address: Train-Ticket系统地址，如果为None则使用配置文件中的地址
+        """
+        # 如果未提供地址，使用配置中的基础URL
+        self.address = ts_address if ts_address else BASE_URL
         self.uid = ""
         self.token = ""
         self.session = requests.Session()
@@ -29,60 +37,127 @@ class Query:
             'Connection': 'keep-alive',
         })
 
-    def login(self, username="fdse_microservice", password="111111") -> bool:
+    def login(self, username=None, password=None) -> bool:
         """
         登陆并建立session，返回登陆结果
+        
+        Args:
+            username: 用户名，如果为None则使用配置文件中的用户名
+            password: 密码，如果为None则使用配置文件中的密码
+            
+        Returns:
+            登录是否成功
         """
+        # 使用配置中的用户名密码，如未提供
+        username = username if username else USERNAME
+        password = password if password else PASSWORD
+        
         url = f"{self.address}/api/v1/users/login"
+        
+        # 首先尝试获取新的cookies
+        from utils import generate_new_cookies
+        cookies = generate_new_cookies(self.address)
+        
+        # 如果获取cookies失败，使用默认的cookies
+        if not cookies:
+            logger.warning("获取新cookies失败，使用默认cookies")
+            cookies = {
+                'JSESSIONID': '9ED5635A2A892A4BA31E7E98533A279D',
+                'YsbCaptcha': '025080CF8BA94594B09E283F17815444',
+            }
 
         headers = {
+            'Proxy-Connection': 'keep-alive',
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'X-Requested-With': 'XMLHttpRequest',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+            'Content-Type': 'application/json',
             'Origin': url,
             'Referer': f"{self.address}/client_login.html",
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Connection': 'close'
         }
 
-        data = '{"username":"' + username + '","password":"' + \
-            password + '","verificationCode":"1234"}'
+        # 按照atomic_queries.py的数据格式构造
+        data = '{"username":"' + username + '","password":"' + password + '"}'
 
-        # 获取cookies
-        verify_url = self.address + '/api/v1/verifycode/generate'
-        r = self.session.get(url=verify_url)
-        r = self.session.post(url=url, headers=headers,
-                              data=data, verify=False)
+        try:
+            # 直接发送登录请求，不获取验证码
+            logger.info(f"正在登录: {url}, 用户名: {username}")
+            logger.debug(f"请求数据: {data}")
+            logger.debug(f"使用cookies: {cookies}")
+            
+            r = self.session.post(url=url, headers=headers,
+                                  cookies=cookies, data=data, verify=False)
 
-        if r.status_code == 200:
-            data = r.json().get("data")
-            self.uid = data.get("userId")
-            self.token = data.get("token")
+            if r.status_code != 200:
+                logger.error(f"登录请求失败，状态码: {r.status_code}")
+                logger.error(f"错误内容: {r.text}")
+                return False
+                
+            # 检查返回的JSON内容
+            response_json = r.json()
+            logger.debug(f"登录响应: {response_json}")
+            
+            if not response_json:
+                logger.error("登录响应不是有效的JSON格式")
+                return False
+                
+            # 检查响应结构
+            if "data" not in response_json or response_json["data"] is None:
+                logger.error("登录响应中没有data字段或data为空")
+                logger.error(f"完整响应: {response_json}")
+                return False
+                
+            data = response_json.get("data")
+            user_id = data.get("userId")
+            token = data.get("token")
+            
+            if not user_id or not token:
+                logger.error(f"未找到用户ID或令牌: userId={user_id}, token={token}")
+                return False
+                
+            self.uid = user_id
+            self.token = token
             self.session.headers.update(
                 {"Authorization": f"Bearer {self.token}"}
             )
-            logger.info(f"login success, uid: {self.uid}")
+            logger.info(f"登录成功, 用户ID: {self.uid}")
             return True
-        else:
-            logger.error("login failed")
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"连接服务器失败: {e}")
+            return False
+        except requests.exceptions.Timeout as e:
+            logger.error(f"请求超时: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"登录时发生未知错误: {e}")
             return False
 
     def admin_login(self):
         return self.login
 
-    def query_high_speed_ticket(self, place_pair: tuple = (), time: str = "", headers: dict = {}) -> List[str]:
+    def query_high_speed_ticket(self, place_pair: tuple = None, time: str = None, headers: dict = {}) -> List[str]:
         """
-        返回TripId 列表
-        :param place_pair: 使用的开始结束组对
-        :param headers: 请求头
-        :return: TripId 列表
+        查询高铁票
+        
+        Args:
+            place_pair: 使用的开始结束组对，如果为None则随机从配置中选择
+            time: 出发日期，如果为None则使用配置中的日期
+            headers: 请求头
+            
+        Returns:
+            TripId列表
         """
-
         url = f"{self.address}/api/v1/travelservice/trips/left"
-        place_pairs = [("Shang Hai", "Su Zhou"),
-                       ("Su Zhou", "Shang Hai"),
-                       ("Nan Jing", "Shang Hai")]
-
-        if place_pair == ():
-            place_pair = random.choice(place_pairs)
-
-        if time == "":
-            time = datestr
+        
+        # 使用配置中的地点对，如未提供
+        if place_pair is None:
+            place_pair = random_from_list(PLACE_PAIRS['high_speed'])
+            
+        # 使用配置中的日期，如未提供
+        if time is None:
+            time = DEFAULT_DATE
 
         payload = {
             "departureTime": time,
@@ -94,7 +169,7 @@ class Query:
 
         if response.status_code != 200 or response.json().get("data") is None:
             logger.warning(
-                f"request for {url} failed. response data is {response.text}")
+                f"请求 {url} 失败。响应数据: {response.text}")
             return None
 
         data = response.json().get("data")  # type: dict
@@ -106,16 +181,27 @@ class Query:
             trip_ids.append(trip_id)
         return trip_ids
 
-    def query_normal_ticket(self, place_pair: tuple = (), time: str = "", headers: dict = {}) -> List[str]:
+    def query_normal_ticket(self, place_pair: tuple = None, time: str = None, headers: dict = {}) -> List[str]:
+        """
+        查询普通列车票
+        
+        Args:
+            place_pair: 使用的开始结束组对，如果为None则随机从配置中选择
+            time: 出发日期，如果为None则使用配置中的日期
+            headers: 请求头
+            
+        Returns:
+            TripId列表
+        """
         url = f"{self.address}/api/v1/travel2service/trips/left"
-        place_pairs = [("Shang Hai", "Nan Jing"),
-                       ("Nan Jing", "Shang Hai")]
-
-        if place_pair == ():
-            place_pair = random.choice(place_pairs)
-
-        if time == "":
-            time = datestr
+        
+        # 使用配置中的地点对，如未提供
+        if place_pair is None:
+            place_pair = random_from_list(PLACE_PAIRS['normal'])
+            
+        # 使用配置中的日期，如未提供
+        if time is None:
+            time = DEFAULT_DATE
 
         payload = {
             "departureTime": time,
@@ -127,7 +213,7 @@ class Query:
 
         if response.status_code != 200 or response.json().get("data") is None:
             logger.warning(
-                f"request for {url} failed. response data is {response.text}")
+                f"请求 {url} 失败。响应数据: {response.text}")
             return None
 
         data = response.json().get("data")  # type: dict

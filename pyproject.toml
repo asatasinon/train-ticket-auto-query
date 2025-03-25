@@ -1,0 +1,10 @@
+[project]
+name = "train-ticket-auto-query"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv>=0.15.0",
+    "requests>=2.25.0",
+]

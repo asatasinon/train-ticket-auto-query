@@ -1,13 +1,19 @@
-from .queries import Query
-from .utils import *
+from queries import Query
+from utils import random_from_weighted, random_from_list
+from config import HIGHSPEED_WEIGHTS, PLACE_SHANG_HAI, PLACE_SU_ZHOU, PLACE_NAN_JING, DEFAULT_DATE
 import logging
 
 logger = logging.getLogger("autoquery-scenario")
-highspeed_weights = {True: 60, False: 40}
 
 
 def query_and_cancel(q: Query):
-    if random_from_weighted(highspeed_weights):
+    """
+    查询订单并取消
+    
+    Args:
+        q: 查询对象
+    """
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
         pairs = q.query_orders(types=tuple([0, 1]))
     else:
         pairs = q.query_orders(types=tuple([0, 1]), query_other=True)
@@ -22,11 +28,17 @@ def query_and_cancel(q: Query):
     if not order_id:
         return
 
-    logger.info(f"{order_id} queried and canceled")
+    logger.info(f"{order_id} 已查询并取消")
 
 
 def query_and_collect(q: Query):
-    if random_from_weighted(highspeed_weights):
+    """
+    查询订单并取票
+    
+    Args:
+        q: 查询对象
+    """
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
         pairs = q.query_orders(types=tuple([1]))
     else:
         pairs = q.query_orders(types=tuple([1]), query_other=True)
@@ -41,11 +53,17 @@ def query_and_collect(q: Query):
     if not order_id:
         return
 
-    logger.info(f"{order_id} queried and collected")
+    logger.info(f"{order_id} 已查询并取票")
 
 
 def query_and_execute(q: Query):
-    if random_from_weighted(highspeed_weights):
+    """
+    查询订单并进站
+    
+    Args:
+        q: 查询对象
+    """
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
         pairs = q.query_orders(types=tuple([1]))
     else:
         pairs = q.query_orders(types=tuple([1]), query_other=True)
@@ -60,25 +78,31 @@ def query_and_execute(q: Query):
     if not order_id:
         return
 
-    logger.info(f"{order_id} queried and entered station")
+    logger.info(f"{order_id} 已查询并进站")
 
 
 def query_and_preserve(q: Query):
+    """
+    查询并预订车票
+    
+    Args:
+        q: 查询对象
+    """
     start = ""
     end = ""
     trip_ids = []
 
-    high_speed = random_from_weighted(highspeed_weights)
+    high_speed = random_from_weighted(HIGHSPEED_WEIGHTS)
     if high_speed:
-        start = "Shang Hai"
-        end = "Su Zhou"
+        start = PLACE_SHANG_HAI
+        end = PLACE_SU_ZHOU
         high_speed_place_pair = (start, end)
-        trip_ids = q.query_high_speed_ticket(place_pair=high_speed_place_pair)
+        trip_ids = q.query_high_speed_ticket(place_pair=high_speed_place_pair, time=DEFAULT_DATE)
     else:
-        start = "Shang Hai"
-        end = "Nan Jing"
+        start = PLACE_SHANG_HAI
+        end = PLACE_NAN_JING
         other_place_pair = (start, end)
-        trip_ids = q.query_normal_ticket(place_pair=other_place_pair)
+        trip_ids = q.query_normal_ticket(place_pair=other_place_pair, time=DEFAULT_DATE)
 
     _ = q.query_assurances()
 
@@ -86,7 +110,13 @@ def query_and_preserve(q: Query):
 
 
 def query_and_consign(q: Query):
-    if random_from_weighted(highspeed_weights):
+    """
+    查询订单并托运
+    
+    Args:
+        q: 查询对象
+    """
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
         list = q.query_orders_all_info()
     else:
         list = q.query_orders_all_info(query_other=True)
@@ -101,11 +131,17 @@ def query_and_consign(q: Query):
     if not order_id:
         return
 
-    logger.info(f"{order_id} queried and put consign")
+    logger.info(f"{order_id} 已查询并托运")
 
 
 def query_and_pay(q: Query):
-    if random_from_weighted(highspeed_weights):
+    """
+    查询订单并支付
+    
+    Args:
+        q: 查询对象
+    """
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
         pairs = q.query_orders(types=tuple([0, 1]))
     else:
         pairs = q.query_orders(types=tuple([0, 1]), query_other=True)
@@ -120,11 +156,17 @@ def query_and_pay(q: Query):
     if not order_id:
         return
 
-    logger.info(f"{order_id} queried and paid")
+    logger.info(f"{order_id} 已查询并支付")
 
 
 def query_and_rebook(q: Query):
-    if random_from_weighted(highspeed_weights):
+    """
+    查询订单并改签
+    
+    Args:
+        q: 查询对象
+    """
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
         pairs = q.query_orders(types=tuple([0, 1]))
     else:
         pairs = q.query_orders(types=tuple([0, 1]), query_other=True)
@@ -140,4 +182,4 @@ def query_and_rebook(q: Query):
         return
 
     q.rebook_ticket(pair[0], pair[1], pair[1])
-    logger.info(f"{order_id} queried and rebooked")
+    logger.info(f"{order_id} 已查询并改签")
