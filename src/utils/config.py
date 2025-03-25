@@ -52,6 +52,14 @@ HIGHSPEED_WEIGHTS = {True: HIGHSPEED_WEIGHT, False: NORMAL_WEIGHT}
 BATCH_COUNT = int(os.getenv('TS_BATCH_COUNT', 100))
 BATCH_INTERVAL = float(os.getenv('TS_BATCH_INTERVAL', 1))
 
+# 压测配置
+STRESS_CONCURRENT = int(os.getenv('TS_STRESS_CONCURRENT', 10))  # 压测并发数
+STRESS_COUNT = int(os.getenv('TS_STRESS_COUNT', 100))  # 压测请求总数
+STRESS_SCENARIO = os.getenv('TS_STRESS_SCENARIO', 'high_speed')  # 压测使用的场景
+STRESS_TIMEOUT = int(os.getenv('TS_STRESS_TIMEOUT', 30))  # 压测请求超时时间(秒)
+STRESS_INTERVAL = float(os.getenv('TS_STRESS_INTERVAL', 0.1))  # 压测启动间隔(秒)
+STRESS_ERROR_RATE_THRESHOLD = float(os.getenv('TS_STRESS_ERROR_RATE_THRESHOLD', 0.1))  # 可接受的错误率阈值
+
 # 场景相关配置
 PLACE_PAIRS = {
     'high_speed': [
@@ -82,7 +90,13 @@ def get_config() -> Dict[str, Any]:
         'highspeed_weights': HIGHSPEED_WEIGHTS,
         'batch_count': BATCH_COUNT,
         'batch_interval': BATCH_INTERVAL,
-        'log_level': LOG_LEVEL
+        'log_level': LOG_LEVEL,
+        'stress_concurrent': STRESS_CONCURRENT,
+        'stress_count': STRESS_COUNT,
+        'stress_scenario': STRESS_SCENARIO,
+        'stress_timeout': STRESS_TIMEOUT,
+        'stress_interval': STRESS_INTERVAL,
+        'stress_error_rate_threshold': STRESS_ERROR_RATE_THRESHOLD
     }
 
 

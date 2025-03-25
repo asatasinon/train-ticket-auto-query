@@ -1,6 +1,6 @@
 # Train-Ticket 自动查询工具
 
-这是一个用于与 Train-Ticket 系统进行交互的自动化查询工具，支持多种查询场景的批量执行。本工具使用现代Python项目结构和uv包管理器，提供高效的依赖管理和开发体验。
+这是一个用于与 Train-Ticket 系统进行交互的自动化查询工具，支持多种查询场景的批量执行和性能压测。本工具使用现代Python项目结构和uv包管理器，提供高效的依赖管理和开发体验。
 
 ## 项目结构
 
@@ -96,6 +96,14 @@ TS_BATCH_INTERVAL=1
 
 # 日志级别
 TS_LOG_LEVEL=INFO
+
+# 压测配置
+TS_STRESS_CONCURRENT=10     # 压测并发数
+TS_STRESS_COUNT=100         # 压测总请求数
+TS_STRESS_SCENARIO=high_speed  # 压测场景
+TS_STRESS_TIMEOUT=30        # 请求超时时间(秒)
+TS_STRESS_INTERVAL=0.1      # 并发线程启动间隔(秒)
+TS_STRESS_ERROR_RATE_THRESHOLD=0.1  # 可接受的错误率阈值
 ```
 
 ## 安装依赖
@@ -164,6 +172,25 @@ python -m src.main --scenario query_high_speed
 
 ```bash
 python -m src.main --batch 50
+```
+
+### 执行压测
+
+详细的压测使用说明请参考[压测工具使用说明](docs/stress_testing.md)。
+
+基本用法：
+```bash
+# 使用默认配置执行压测
+python -m src.stress
+
+# 指定场景进行压测
+python -m src.stress --scenario high_speed
+
+# 指定并发数和总请求数
+python -m src.stress --concurrent 20 --count 200
+
+# 更多选项
+python -m src.stress --help
 ```
 
 ### 查看当前配置
@@ -264,3 +291,7 @@ python tests/test_connection.py
 - [uv 官方文档](https://docs.astral.sh/uv/)
 - [python-dotenv 文档](https://github.com/theskumar/python-dotenv)
 - [Train-Ticket 系统](https://github.com/FudanSELab/train-ticket)
+
+## 文档
+
+- [压测工具使用说明](docs/stress_testing.md) - 详细的压测配置和使用指南
