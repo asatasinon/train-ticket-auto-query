@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>压测可视化系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <style>
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .progress {
+            height: 25px;
+            font-size: 14px;
+        }
+        .result-card {
+            margin-top: 20px;
+        }
+        .error-log {
+            color: #dc3545;
+        }
+        .success-log {
+            color: #198754;
+        }
+        .stage-log {
+            color: #0d6efd;
+            font-weight: bold;
+            margin: 10px 0;
+            padding: 5px;
+            border-left: 3px solid #0d6efd;
+            background-color: #f8f9fa;
+        }
+        .api-error-log {
+            color: #fd7e14;  /* Bootstrap warning color */
+            font-style: italic;
+        }
+        .log-entry .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">压测可视化系统</h1>
+        
+        <!-- 配置区域 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">压测配置</h5>
+            </div>
+            <div class="card-body">
+                <form id="configForm">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="scenarios" class="form-label">选择场景</label>
+                            <select class="form-select" id="scenarios" multiple>
+                                {% for scenario in scenarios %}
+                                <option value="{{ scenario }}" {% if scenario == "高铁车票查询" %}selected{% endif %}>{{ scenario }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="totalCount">总执行次数</label>
+                            <input type="number" class="form-control" id="totalCount" name="totalCount" 
+                                min="1" value="100" required>
+                            <small class="form-text text-muted">设置压测总执行次数（最小1次）</small>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="interval">请求间隔(秒)</label>
+                            <input type="number" class="form-control" id="interval" name="interval" 
+                                min="0" max="10" step="0.1" value="0.1" required>
+                            <small class="form-text text-muted">设置每个请求之间的间隔时间（0-10秒）</small>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="concurrency">并发数</label>
+                            <input type="number" class="form-control" id="concurrency" name="concurrency" 
+                                min="1" max="100" value="100" required>
+                            <small class="form-text text-muted">设置并发执行的数量（1-100）</small>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="startBtn">开始压测</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 进度展示区域 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">执行进度</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-2">
+                    <div class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                </div>
+                <div class="text-center">
+                    <span id="progressText">0/0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 实时日志区域 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">实时日志</h5>
+            </div>
+            <div class="card-body">
+                <div class="log-container" id="logContainer"></div>
+            </div>
+        </div>
+        
+        <!-- 结果展示区域 -->
+        <div class="card result-card" id="resultCard" style="display: none;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">压测结果</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>执行压测统计</h6>
+                        <table class="table">
+                            <tr>
+                                <td>总执行次数</td>
+                                <td id="executionTotal">-</td>
+                            </tr>
+                            <tr>
+                                <td>成功次数</td>
+                                <td id="executionSuccess">-</td>
+                            </tr>
+                            <tr>
+                                <td>失败次数</td>
+                                <td id="executionFailure">-</td>
+                            </tr>
+                            <tr>
+                                <td>总执行时间</td>
+                                <td id="executionTime">-</td>
+                            </tr>
+                        </table>
+                        
+                        <h6 class="mt-4">接口响应统计</h6>
+                        <table class="table">
+                            <tr>
+                                <td>总请求次数</td>
+                                <td id="apiTotal">-</td>
+                            </tr>
+                            <tr>
+                                <td>成功次数(200)</td>
+                                <td id="apiSuccess">-</td>
+                            </tr>
+                            <tr>
+                                <td>失败次数(非200)</td>
+                                <td id="apiFailure">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>接口响应时间统计(秒)</h6>
+                        <table class="table">
+                            <tr>
+                                <td>最小响应时间</td>
+                                <td id="minTime">-</td>
+                            </tr>
+                            <tr>
+                                <td>最大响应时间</td>
+                                <td id="maxTime">-</td>
+                            </tr>
+                            <tr>
+                                <td>平均响应时间</td>
+                                <td id="avgTime">-</td>
+                            </tr>
+                            <tr>
+                                <td>总响应时间</td>
+                                <td id="sumTime">-</td>
+                            </tr>
+                            <tr>
+                                <td>P90响应时间</td>
+                                <td id="p90Time">-</td>
+                            </tr>
+                            <tr>
+                                <td>P95响应时间</td>
+                                <td id="p95Time">-</td>
+                            </tr>
+                            <tr>
+                                <td>P99响应时间</td>
+                                <td id="p99Time">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>错误详情统计</h6>
+                        <table class="table">
+                            <tr>
+                                <td>500错误</td>
+                                <td id="error500Count">-</td>
+                            </tr>
+                            <tr>
+                                <td>502错误</td>
+                                <td id="error502Count">-</td>
+                            </tr>
+                            <tr>
+                                <td>504错误</td>
+                                <td id="error504Count">-</td>
+                            </tr>
+                            <tr>
+                                <td>连接拒绝</td>
+                                <td id="errorConnectionCount">-</td>
+                            </tr>
+                            <tr>
+                                <td>其他错误</td>
+                                <td id="errorOtherCount">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>性能指标</h6>
+                        <table class="table">
+                            <tr>
+                                <td>QPS</td>
+                                <td id="qpsResult">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 初始化 Select2
+            $('#scenarios').select2({
+                placeholder: '选择要执行的场景',
+                allowClear: true
+            });
+            
+            // 设置默认选中高铁车票查询场景
+            $('#scenarios option[value="高铁车票查询"]').prop('selected', true);
+            
+            let ws = null;
+            const wsUrl = 'ws://localhost:5001/ws';
+            let config = null;
+            
+            // 添加消息处理函数
+            function handleMessage(data) {
+                try {
+                    // 添加时间戳到日志
+                    const timestamp = data.timestamp || new Date().toLocaleString();
+                    let logEntry = `<div class="log-entry"><span class="timestamp">[${timestamp}] </span>`;
+                    
+                    switch (data.type) {
+                        case 'stage':
+                            logEntry += `<div class="stage-log">${data.message}</div>`;
+                            break;
+                            
+                        case 'progress':
+                            const progress = data.progress;
+                            $('.progress-bar').css('width', progress + '%').text(progress.toFixed(1) + '%');
+                            $('#progressText').text(`${data.current}/${data.total}`);
+                            
+                            // 更新接口错误统计
+                            if (data.api_errors) {
+                                $('#error500Count').text(data.api_errors['500'] + ' 次');
+                                $('#error502Count').text(data.api_errors['502'] + ' 次');
+                                $('#error504Count').text(data.api_errors['504'] + ' 次');
+                                $('#errorConnectionCount').text(data.api_errors['connection_refused'] + ' 次');
+                                $('#errorOtherCount').text(data.api_errors['other'] + ' 次');
+                            }
+                            return; // 进度更新不需要显示在日志中
+                            
+                        case 'log':
+                            logEntry += `<div class="success-log">${data.message}`;
+                            if (data.response_time) {
+                                logEntry += ` (耗时: ${data.response_time})`;
+                            }
+                            logEntry += '</div>';
+                            break;
+                            
+                        case 'error':
+                            logEntry += `<div class="error-log">错误: ${data.message}`;
+                            if (data.scenario) {
+                                logEntry += ` (场景: ${data.scenario})`;
+                            }
+                            logEntry += '</div>';
+                            break;
+                            
+                        case 'api_error':
+                            logEntry += `<div class="api-error-log">${data.message}`;
+                            if (data.response_time) {
+                                logEntry += ` (耗时: ${data.response_time})`;
+                            }
+                            logEntry += '</div>';
+                            break;
+                            
+                        case 'complete':
+                            logEntry += '<div class="stage-log">压测执行完成，展示结果...</div>';
+                            
+                            // 显示结果卡片
+                            $('#resultCard').show();
+                            
+                            // 更新结果
+                            console.log('收到完成消息，结果数据:', data.results);
+                            const results = data.results;
+                            
+                            // 更新执行压测统计
+                            const execution = results.execution;
+                            $('#executionTotal').text(execution.total + ' 次');
+                            $('#executionSuccess').text(execution.success + ' 次');
+                            $('#executionFailure').text(execution.failure + ' 次');
+                            $('#executionTime').text(execution.total_time.toFixed(2) + ' 秒');
+                            
+                            // 更新接口响应统计
+                            const apiResponse = results.api_response;
+                            $('#apiTotal').text(apiResponse.total + ' 次');
+                            $('#apiSuccess').text(apiResponse.success + ' 次');
+                            $('#apiFailure').text(apiResponse.failure + ' 次');
+                            
+                            // 更新响应时间统计
+                            $('#minTime').text(apiResponse.min_time.toFixed(3) + ' 秒');
+                            $('#maxTime').text(apiResponse.max_time.toFixed(3) + ' 秒');
+                            $('#avgTime').text(apiResponse.avg_time.toFixed(3) + ' 秒');
+                            $('#sumTime').text(apiResponse.sum_time.toFixed(3) + ' 秒');
+                            $('#p90Time').text(apiResponse.p90_time.toFixed(3) + ' 秒');
+                            $('#p95Time').text(apiResponse.p95_time.toFixed(3) + ' 秒');
+                            $('#p99Time').text(apiResponse.p99_time.toFixed(3) + ' 秒');
+                            
+                            // 更新错误详情统计
+                            const errorDetails = apiResponse.error_details;
+                            $('#error500Count').text(errorDetails['500'] + ' 次');
+                            $('#error502Count').text(errorDetails['502'] + ' 次');
+                            $('#error504Count').text(errorDetails['504'] + ' 次');
+                            $('#errorConnectionCount').text(errorDetails['connection_refused'] + ' 次');
+                            $('#errorOtherCount').text(errorDetails['other'] + ' 次');
+                            
+                            // 更新性能指标
+                            $('#qpsResult').text(results.qps.toFixed(2) + ' 次/秒');
+                            
+                            // 标记为正常关闭并发送确认消息
+                            if (ws && ws.readyState === WebSocket.OPEN) {
+                                ws.isNormalClosure = true;  // 在发送确认消息前标记
+                                try {
+                                    console.log('发送完成确认消息');
+                                    ws.send(JSON.stringify({ type: 'complete_confirmed' }));
+                                    
+                                    // 等待后端处理完成确认消息
+                                    setTimeout(() => {
+                                        if (ws && ws.readyState === WebSocket.OPEN) {
+                                            console.log('正常关闭WebSocket连接');
+                                            ws.close(1000, "压测完成");  // 使用正常关闭码
+                                        }
+                                    }, 1000);  // 增加延迟到1秒，确保后端有足够时间处理
+                                } catch (error) {
+                                    console.error('发送确认消息失败:', error);
+                                    handleError('发送确认消息失败');
+                                }
+                            }
+                            break;
+                    }
+                    
+                    $('#logContainer').append(logEntry + '</div>');
+                    // 自动滚动到日志底部
+                    const logContainer = document.getElementById('logContainer');
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                } catch (error) {
+                    console.error('处理消息时出错:', error);
+                    console.error('原始消息:', data);
+                    handleError(`解析消息时出错: ${error.message} (原始消息: ${data ? data.substring(0, 100) : 'empty'}...)`);
+                }
+            }
+            
+            // WebSocket 连接函数
+            function connectWebSocket() {
+                try {
+                    console.log('正在连接 WebSocket:', wsUrl);
+                    
+                    // 如果已存在连接，先关闭
+                    if (ws) {
+                        ws.close();
+                    }
+                    
+                    ws = new WebSocket(wsUrl);
+                    ws.isNormalClosure = false; // 初始化关闭标记
+                    
+                    ws.onopen = function() {
+                        console.log('WebSocket 连接成功');
+                        $('#startBtn').prop('disabled', true);
+                        
+                        // 发送配置
+                        if (config) {
+                            try {
+                                ws.send(JSON.stringify(config));
+                            } catch (error) {
+                                console.error('发送配置失败:', error);
+                                handleError('发送配置失败，请刷新页面重试');
+                                closeWebSocket(true);
+                            }
+                        }
+                    };
+                    
+                    ws.onmessage = function(event) {
+                        try {
+                            // 打印接收到的原始消息
+                            console.log('收到WebSocket消息:', event.data);
+                            
+                            // 验证消息格式
+                            if (!event.data || typeof event.data !== 'string') {
+                                throw new Error('无效的消息格式');
+                            }
+                            
+                            // 尝试解析JSON
+                            let data;
+                            try {
+                                data = JSON.parse(event.data);
+                            } catch (parseError) {
+                                console.error('JSON解析错误:', parseError);
+                                console.error('问题消息内容:', event.data);
+                                // 尝试清理和重新解析
+                                const cleanData = event.data.replace(/}{/g, '},{');
+                                try {
+                                    if (cleanData.startsWith('{') && cleanData.endsWith('}')) {
+                                        data = JSON.parse(cleanData);
+                                    } else {
+                                        data = JSON.parse(`{${cleanData}}`);
+                                    }
+                                } catch (retryError) {
+                                    throw new Error(`JSON解析失败: ${parseError.message}`);
+                                }
+                            }
+                            
+                            // 验证消息结构
+                            if (!data.type) {
+                                throw new Error('消息缺少type字段');
+                            }
+                            
+                            console.log('解析后的消息:', data);
+                            handleMessage(data);
+                        } catch (error) {
+                            console.error('处理消息时出错:', error);
+                            console.error('原始消息:', event.data);
+                            handleError(`解析消息时出错: ${error.message} (原始消息: ${event.data ? event.data.substring(0, 100) : 'empty'}...)`);
+                        }
+                    };
+
+                    // WebSocket错误处理
+                    ws.onerror = function(error) {
+                        console.error('WebSocket错误:', error);
+                        if (!ws.isNormalClosure) {  // 只在非正常关闭时显示错误
+                            handleError('WebSocket 连接错误，请刷新页面重试');
+                        }
+                    };
+
+                    // WebSocket关闭处理
+                    ws.onclose = function(event) {
+                        console.log('WebSocket关闭事件:', event.code, event.reason);
+                        // 只有在非正常关闭且不是完成状态时显示错误
+                        if (!ws.isNormalClosure && event.code !== 1000) {
+                            handleError('WebSocket 连接已断开，请刷新页面重试');
+                        } else {
+                            console.log('WebSocket正常关闭');
+                        }
+                        // 重置连接状态
+                        ws = null;
+                        $('#startBtn').prop('disabled', false);
+                    };
+
+                    // 页面关闭时清理WebSocket连接
+                    window.onbeforeunload = function() {
+                        if (ws) {
+                            ws.isNormalClosure = true;  // 标记为正常关闭
+                            ws.close(1000, "页面关闭");
+                        }
+                    };
+                } catch (error) {
+                    console.error('创建 WebSocket 连接时出错:', error);
+                    handleError('创建 WebSocket 连接失败，请刷新页面重试');
+                    $('#startBtn').prop('disabled', false);
+                }
+            }
+            
+            // 错误处理函数
+            function handleError(message) {
+                console.error('错误:', message);
+                const timestamp = new Date().toLocaleString();
+                const errorHtml = `
+                    <div class="log-entry">
+                        <span class="timestamp">[${timestamp}]</span>
+                        <div class="error-log">${message}</div>
+                    </div>
+                `;
+                $('#logContainer').append(errorHtml);
+                const logContainer = document.getElementById('logContainer');
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+            
+            // 表单提交处理
+            $('#configForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                // 获取配置
+                config = {
+                    scenarios: $('#scenarios').val(),
+                    total_count: parseInt($('#totalCount').val()),
+                    interval: parseFloat($('#interval').val()),
+                    concurrency: parseInt($('#concurrency').val())
+                };
+                
+                // 验证配置
+                if (!config.scenarios || config.scenarios.length === 0) {
+                    alert('请至少选择一个场景');
+                    return;
+                }
+                
+                if (config.total_count < 1) {
+                    alert('总执行次数必须大于0');
+                    return;
+                }
+                
+                if (config.interval < 0.1) {
+                    alert('执行间隔不能小于0.1秒');
+                    return;
+                }
+                
+                if (config.concurrency < 1 || config.concurrency > 100) {
+                    alert('并发数必须在 1-100 之间');
+                    return;
+                }
+                
+                // 重置界面
+                $('.progress-bar').css('width', '0%').text('0%');
+                $('#progressText').text('0/0');
+                $('#logContainer').empty();
+                $('#resultCard').hide();
+                
+                // 连接 WebSocket
+                connectWebSocket();
+            });
+        });
+    </script>
+</body>
+</html> 
