@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: train-ticket-auto-query
     ports:
-      - "5001:5001"
+      - "30001:5001"
     volumes:
       # 可选：挂载日志目录到宿主机
       - ./logs:/app/logs
