@@ -23,4 +23,27 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s 
+      start_period: 5s
+      
+  train-ticket-timed-task:
+    build:
+      context: .
+      dockerfile: Dockerfile.timed-task
+    container_name: train-ticket-timed-task
+    volumes:
+      # 可选：挂载日志目录到宿主机
+      - ./logs:/app/logs
+    environment:
+      # 这里可以覆盖默认环境变量
+      TS_BASE_URL: "http://101.47.134.73:32677"
+      # TS_USERNAME: "你的用户名"
+      # TS_PASSWORD: "你的密码"
+      TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
+      TS_LOG_LEVEL: "INFO"  # 日志级别
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(0 if os.path.exists('/tmp/timed_task_health') and time.time() - os.path.getmtime('/tmp/timed_task_health') < 120 else 1)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s 

@@ -223,6 +223,32 @@ python -m src.timed_task --interval 30
 python -m src.timed_task --log-level DEBUG
 ```
 
+#### 使用Docker
+
+也可以通过Docker来运行定时任务：
+
+```bash
+# 构建并启动定时任务容器
+docker-compose up -d train-ticket-timed-task
+
+# 查看定时任务容器日志
+docker logs -f train-ticket-timed-task
+
+# 停止定时任务容器
+docker-compose stop train-ticket-timed-task
+```
+
+定时任务容器的配置参数可在docker-compose.yml文件中修改：
+
+```yaml
+environment:
+  TS_BASE_URL: "http://train-ticket-server-address:port"
+  TS_USERNAME: "your_username"
+  TS_PASSWORD: "your_password"
+  TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
+  TS_LOG_LEVEL: "INFO"  # 日志级别
+```
+
 ### 执行压测
 
 详细的压测使用说明请参考[压测工具使用说明](docs/stress_testing.md)。

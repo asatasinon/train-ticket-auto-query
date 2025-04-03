@@ -61,11 +61,11 @@ SCENARIOS = [
 
 class TimedTaskRunner:
     """定时任务执行器类"""
-    
+
     def __init__(self, interval_seconds=60):
         """
         初始化定时任务执行器
-        
+
         Args:
             interval_seconds: 任务执行间隔（秒）
         """
@@ -75,7 +75,7 @@ class TimedTaskRunner:
         self.current_scenario_index = 0
         self.total_scenarios = len(SCENARIOS)
         self.running = False
-    
+
     def setup(self):
         """设置环境，创建Query对象并登录"""
         self.logger.info("正在设置定时任务环境...")
@@ -83,56 +83,71 @@ class TimedTaskRunner:
         if not check_config():
             self.logger.error("配置检查失败，无法连接到服务器")
             return False
-        
+
         # 创建Query对象
         self.query = Query()
-        
+
         # 登录
         self.logger.info("正在登录...")
         if not self.query.login():
             self.logger.error("登录失败！")
             return False
-        
+
         self.logger.info(f"登录成功！用户ID: {self.query.uid}")
         return True
-    
+
     def run_next_scenario(self):
         """执行下一个场景"""
         if not self.query:
             self.logger.error("Query对象未初始化，请先调用setup方法")
             return
-        
+
         # 获取当前要执行的场景
         scenario_name, scenario_func = SCENARIOS[self.current_scenario_index]
-        
+
         # 执行场景
-        self.logger.info(f"[{self.current_scenario_index + 1}/{self.total_scenarios}] 开始执行场景: {scenario_name}")
+        self.logger.info(
+            f"[{self.current_scenario_index + 1}/{self.total_scenarios}] "
+            f"开始执行场景: {scenario_name}"
+        )
         try:
             current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.logger.info(f"执行时间: {current_time}")
             scenario_func(self.query)
             self.logger.info(f"场景 {scenario_name} 执行完成")
+
+            # 更新健康检查文件，用于Docker容器健康检查
+            try:
+                health_file = "/tmp/timed_task_health"
+                with open(health_file, "w") as f:
+                    f.write(f"Last execution: {current_time}\n")
+                    f.write(f"Last scenario: {scenario_name}\n")
+                self.logger.debug(f"已更新健康检查文件: {health_file}")
+            except Exception as e:
+                self.logger.warning(f"无法更新健康检查文件: {e}")
         except Exception as e:
             self.logger.error(f"场景 {scenario_name} 执行出错: {e}")
-        
+
         # 更新索引，进入下一个场景
-        self.current_scenario_index = (self.current_scenario_index + 1) % self.total_scenarios
-    
+        self.current_scenario_index = (
+            self.current_scenario_index + 1
+        ) % self.total_scenarios
+
     def start(self):
         """启动定时任务"""
         if not self.setup():
             self.logger.error("环境设置失败，无法启动定时任务")
             return
-        
+
         self.running = True
         self.logger.info(f"定时任务已启动，将每 {self.interval} 秒执行一个场景")
-        
+
         # 立即执行一次第一个场景
         self.run_next_scenario()
-        
+
         # 设置定时任务
         schedule.every(self.interval).seconds.do(self.run_next_scenario)
-        
+
         # 主循环
         try:
             while self.running:
@@ -145,7 +160,7 @@ class TimedTaskRunner:
         finally:
             self.running = False
             self.logger.info("定时任务已结束")
-    
+
     def stop(self):
         """停止定时任务"""
         self.running = False
@@ -155,22 +170,22 @@ class TimedTaskRunner:
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description="Train-Ticket 定时任务工具")
-    
+
     parser.add_argument(
-        "--interval", 
-        type=int, 
+        "--interval",
+        type=int,
         default=60,
-        help="任务执行间隔（秒），默认为60秒（1分钟）"
+        help="任务执行间隔（秒），默认为60秒（1分钟）",
     )
-    
+
     parser.add_argument(
         "--log-level",
         type=str,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         default="INFO",
-        help="日志级别，默认为INFO"
+        help="日志级别，默认为INFO",
     )
-    
+
     return parser.parse_args()
 
 
@@ -178,21 +193,21 @@ def main():
     """主函数"""
     # 解析命令行参数
     args = parse_args()
-    
+
     # 设置日志
     setup_logging(level=args.log_level)
     logger = logging.getLogger("timed-task")
-    
+
     logger.info("=" * 50)
     logger.info("Train-Ticket 定时任务工具")
     logger.info("=" * 50)
-    
+
     # 创建并启动定时任务执行器
     runner = TimedTaskRunner(interval_seconds=args.interval)
     runner.start()
-    
+
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())
