@@ -19,15 +19,18 @@ train-ticket-auto-query/
 │   │   ├── __init__.py
 │   │   ├── config.py     # 配置管理
 │   │   └── helpers.py    # 辅助函数
-│   └── scenarios/        # 场景模块
-│       ├── __init__.py
-│       ├── scenarios.py  # 场景定义
-│       └── runners.py    # 场景执行器
+│   ├── scenarios/        # 场景模块
+│   │   ├── __init__.py
+│   │   ├── scenarios.py  # 场景定义
+│   │   └── runners.py    # 场景执行器
+│   └── timed_task.py     # 定时任务工具
 ├── tests/                # 测试目录
 │   ├── test_connection.py # 连接测试
 │   └── test_login.py     # 登录测试
 ├── examples/             # 示例目录
 │   └── example.py        # 使用示例
+├── start_timed_task.sh   # 定时任务启动脚本 (Linux/macOS)
+├── start_timed_task.bat  # 定时任务启动脚本 (Windows)
 └── archive/              # 归档文件夹
     ├── README.md         # 归档说明
     └── old_scripts/      # 旧版脚本
@@ -38,6 +41,7 @@ train-ticket-auto-query/
 - Python 3.8 或更高版本
 - requests 库
 - python-dotenv 库
+- schedule 库
 - 有效的 Train-Ticket 微服务系统实例
 
 ## 安装 uv 包管理器
@@ -174,6 +178,49 @@ python -m src.main --scenario query_high_speed
 
 ```bash
 python -m src.main --batch 50
+```
+
+### 执行定时任务
+
+定时任务工具会按照场景的实际使用顺序依次执行所有场景，并在执行完所有场景后重新开始循环。
+
+#### 使用启动脚本
+
+**Linux/macOS**:
+```bash
+# 使用默认参数（间隔60秒，INFO日志级别）
+./start_timed_task.sh
+
+# 自定义间隔（30秒）
+./start_timed_task.sh 30
+
+# 自定义间隔和日志级别
+./start_timed_task.sh 30 DEBUG
+```
+
+**Windows**:
+```cmd
+# 使用默认参数（间隔60秒，INFO日志级别）
+start_timed_task.bat
+
+# 自定义间隔（30秒）
+start_timed_task.bat 30
+
+# 自定义间隔和日志级别
+start_timed_task.bat 30 DEBUG
+```
+
+#### 直接使用Python
+
+```bash
+# 使用默认间隔（60秒）
+python -m src.timed_task
+
+# 使用自定义间隔（30秒）
+python -m src.timed_task --interval 30
+
+# 使用自定义日志级别
+python -m src.timed_task --log-level DEBUG
 ```
 
 ### 执行压测

@@ -100,9 +100,24 @@ def get_config() -> Dict[str, Any]:
     }
 
 
-def setup_logging():
-    """配置日志系统"""
-    log_level = LOG_LEVELS.get(LOG_LEVEL, logging.INFO)
+def setup_logging(level=None):
+    """
+    配置日志系统
+    
+    Args:
+        level: 日志级别，可以是字符串('DEBUG', 'INFO'等)或logging模块的级别常量
+              如果为None，则使用环境变量中的配置
+    """
+    # 如果未提供日志级别，使用环境变量中的配置
+    if level is None:
+        level = LOG_LEVEL
+    
+    # 将字符串日志级别转换为logging模块的级别常量
+    if isinstance(level, str):
+        log_level = LOG_LEVELS.get(level.upper(), logging.INFO)
+    else:
+        log_level = level
+    
     logging.basicConfig(
         level=log_level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
