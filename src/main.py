@@ -47,7 +47,9 @@ from src.scenarios.scenarios import (
     query_ticket_parallel_scenario,
     query_and_pay_ticket,
     query_and_cancel_ticket,
-    query_and_consign
+    query_and_consign,
+    query_and_book_ticket_scenario,
+    query_and_rebook_ticket_scenario
 )
 
 # 场景映射字典，用于命令行参数
@@ -58,7 +60,9 @@ SCENARIO_MAP = {
     "parallel": query_ticket_parallel_scenario,
     "pay": query_and_pay_ticket,
     "cancel": query_and_cancel_ticket,
-    "consign": query_and_consign
+    "consign": query_and_consign,
+    "book": query_and_book_ticket_scenario,
+    "rebook": query_and_rebook_ticket_scenario
 }
 
 # 所有场景列表
@@ -69,18 +73,22 @@ ALL_SCENARIOS = [
     query_ticket_parallel_scenario,
     query_and_pay_ticket,
     query_and_cancel_ticket,
-    query_and_consign
+    query_and_consign,
+    query_and_book_ticket_scenario,
+    query_and_rebook_ticket_scenario
 ]
 
 # 场景权重配置
 SCENARIO_WEIGHTS = {
-    "query_high_speed_ticket_scenario": 30,  # 高铁票查询场景权重
-    "query_normal_ticket_scenario": 30,      # 普通列车票查询场景权重
-    "query_food_scenario": 15,               # 食品查询场景权重
+    "query_high_speed_ticket_scenario": 25,  # 高铁票查询场景权重
+    "query_normal_ticket_scenario": 25,      # 普通列车票查询场景权重
+    "query_food_scenario": 10,               # 食品查询场景权重
     "query_ticket_parallel_scenario": 10,    # 并行查询场景权重
     "query_and_pay_ticket": 5,               # 支付订单场景权重
     "query_and_cancel_ticket": 5,            # 取消订单场景权重
-    "query_and_consign": 5                   # 托运场景权重
+    "query_and_consign": 5,                  # 托运场景权重
+    "query_and_book_ticket_scenario": 10,    # 预订车票场景权重
+    "query_and_rebook_ticket_scenario": 5    # 重新订票场景权重
 }
 
 

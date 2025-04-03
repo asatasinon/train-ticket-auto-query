@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 
 # 导入核心查询类
 from ..core.queries import Query
-from ..utils.helpers import random_from_list, random_from_weighted
+from ..utils.helpers import random_from_list, random_from_weighted, random_string, random_phone
 from ..utils.config import DEFAULT_DATE, PLACE_PAIRS, HIGHSPEED_WEIGHTS
 
 logger = logging.getLogger("scenarios")
@@ -239,3 +239,91 @@ def query_and_collect_ticket(query: Query):
     logger.info(f"订单 {order_id} 取票成功")
     time.sleep(1)  # 模拟进站时间
     logger.info(f"订单 {order_id} 进站成功")
+
+
+def query_and_book_ticket_scenario(query: Query):
+    """
+    查询并预订车票场景
+    
+    Args:
+        query: Query对象，用于执行查询
+    """
+    logger.info("执行查询并预订车票场景")
+    
+    # 随机决定是预订高铁还是普通列车
+    high_speed = random_from_weighted(HIGHSPEED_WEIGHTS)
+    start = ""
+    end = ""
+    trip_ids = []
+    
+    # 根据车票类型查询可用车次
+    if high_speed:
+        # 高铁路线
+        place_pair = random_from_list(PLACE_PAIRS['high_speed'])
+        start, end = place_pair
+        logger.info(f"查询高铁路线: {start} -> {end}")
+        trip_ids = query.query_high_speed_ticket(place_pair=place_pair)
+    else:
+        # 普通列车路线
+        place_pair = random_from_list(PLACE_PAIRS['normal'])
+        start, end = place_pair
+        logger.info(f"查询普通列车路线: {start} -> {end}")
+        trip_ids = query.query_normal_ticket(place_pair=place_pair)
+    
+    # 如果没有查询到车次，退出场景
+    if not trip_ids:
+        logger.warning("未查询到可用车次，无法预订车票")
+        return
+    
+    logger.info(f"查询到 {len(trip_ids)} 个车次，准备预订车票")
+    
+    # 查询保险选项
+    query.query_assurances()
+    
+    # 执行预订操作
+    query.preserve(start, end, trip_ids, high_speed)
+    
+    logger.info("预订车票场景执行完成")
+
+
+def query_and_rebook_ticket_scenario(query: Query):
+    """
+    查询并改签车票场景
+    
+    Args:
+        query: Query对象，用于执行查询
+    """
+    logger.info("执行查询并改签车票场景")
+    
+    # 查询可改签的订单（状态为0-未支付或1-已支付）
+    orders = []
+    # 随机决定是查询高铁还是普通列车订单
+    if random_from_weighted(HIGHSPEED_WEIGHTS):
+        logger.info("查询高铁订单进行改签")
+        orders = query.query_orders(types=(0, 1))
+    else:
+        logger.info("查询普通列车订单进行改签")
+        orders = query.query_orders(types=(0, 1), query_other=True)
+    
+    # 如果没有查询到订单，退出场景
+    if not orders:
+        logger.warning("未查询到可改签的订单，无法执行改签")
+        return
+    
+    # 随机选择一个订单进行改签
+    order = random_from_list(orders)
+    order_id, trip_id = order
+    
+    logger.info(f"选择订单 {order_id}，车次 {trip_id} 进行改签")
+    
+    # 获取当前日期作为新日期
+    new_date = DEFAULT_DATE
+    # 随机选择新的座位类型 (2-一等座，3-二等座)
+    new_seat_type = random_from_list(["2", "3"])
+    
+    # 执行改签操作（改为同一车次的不同座位类型）
+    # 注意：在实际场景中，可能需要先查询可用的车次，然后选择不同的车次进行改签
+    logger.info(f"改签为同一车次的座位类型 {new_seat_type}")
+    query.rebook_ticket(order_id, trip_id, trip_id, new_date, new_seat_type)
+    
+    logger.info(f"订单 {order_id} 改签场景执行完成")

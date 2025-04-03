@@ -8,7 +8,7 @@ import time
 import random
 
 # 导入项目内模块
-from ..utils.helpers import random_from_list, generate_new_cookies
+from ..utils.helpers import random_from_list, generate_new_cookies, random_string, random_phone, random_boolean
 from ..utils.config import BASE_URL, USERNAME, PASSWORD, DEFAULT_DATE, PLACE_PAIRS
 
 logger = logging.getLogger("auto-queries")
@@ -700,7 +700,7 @@ class Query:
         need_consign = random_boolean()
         if need_consign:
             consign = {
-                "consigneeName": random_str(),
+                "consigneeName": random_string(),
                 "consigneePhone": random_phone(),
                 "consigneeWeight": random.randint(1, 10),
                 "handleDate": date

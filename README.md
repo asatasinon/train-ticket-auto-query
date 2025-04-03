@@ -159,14 +159,16 @@ python -m src.main --scenario query_high_speed
 ```
 
 可用的场景：
+- `book`: 预订车票
+- `cancel`: 查询并取消订单
 - `collect_ticket`: 查询并取票
-- `query_food`: 查询食品
-- `query_normal`: 查询普通列车票
-- `query_high_speed`: 查询高铁票
-- `query_parallel`: 并行查询车票
-- `cancel_ticket`: 查询并取消订单
-- `pay_ticket`: 查询并支付订单
 - `consign`: 查询并添加托运信息
+- `food`: 查询食品
+- `high_speed`: 查询高铁票
+- `normal`: 查询普通列车票
+- `parallel`: 并行查询车票
+- `pay`: 查询并支付订单
+- `rebook`: 查询并改签车票
 
 ### 批量执行随机场景
 

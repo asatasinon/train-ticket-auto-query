@@ -47,7 +47,9 @@ from src.scenarios.scenarios import (
     query_ticket_parallel_scenario,
     query_and_pay_ticket,
     query_and_cancel_ticket,
-    query_and_consign
+    query_and_consign,
+    query_and_book_ticket_scenario,
+    query_and_rebook_ticket_scenario
 )
 
 # 场景映射字典，用于命令行参数
@@ -58,7 +60,9 @@ SCENARIO_MAP = {
     "parallel": query_ticket_parallel_scenario,
     "pay": query_and_pay_ticket,
     "cancel": query_and_cancel_ticket,
-    "consign": query_and_consign
+    "consign": query_and_consign,
+    "book": query_and_book_ticket_scenario,
+    "rebook": query_and_rebook_ticket_scenario
 }
 
 
