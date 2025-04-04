@@ -223,6 +223,7 @@ start_timed_task.bat -h
 - `-s, --server`: 设置服务器地址
 - `-u, --username`: 设置用户名
 - `-p, --password`: 设置密码
+- `--health-file`: 设置健康检查文件路径，默认为/tmp/timed_task_health
 - `-h, --help`: 显示帮助信息
 
 #### 直接使用Python

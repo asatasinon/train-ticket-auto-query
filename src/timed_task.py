@@ -12,6 +12,8 @@ Train-Ticket 定时任务工具
     python -m src.timed_task --interval 30  # 使用自定义间隔（30秒）执行
     python -m src.timed_task --log-level DEBUG  # 使用指定日志级别执行
     python -m src.timed_task --token-refresh 1800  # 自定义token刷新间隔（秒）
+    python -m src.timed_task --server http://example.com --username user --password pass  # 指定连接参数
+    python -m src.timed_task --health-file /path/to/health  # 指定健康检查文件路径
     python -m src.timed_task --help  # 显示帮助信息
 """
 
@@ -73,17 +75,33 @@ SCENARIOS = [
 class TimedTaskRunner:
     """定时任务执行器类"""
 
-    def __init__(self, interval_seconds=60, token_refresh_interval=1800):
+    def __init__(
+        self, 
+        interval_seconds=60, 
+        token_refresh_interval=1800,
+        server_url=None,
+        username=None,
+        password=None,
+        health_file="/tmp/timed_task_health"
+    ):
         """
         初始化定时任务执行器
 
         Args:
             interval_seconds: 任务执行间隔（秒）
             token_refresh_interval: token刷新间隔（秒），默认30分钟
+            server_url: 服务器地址，如果提供则覆盖环境变量
+            username: 用户名，如果提供则覆盖环境变量
+            password: 密码，如果提供则覆盖环境变量
+            health_file: 健康检查文件路径
         """
         self.logger = logging.getLogger("timed-task")
         self.interval = interval_seconds
         self.token_refresh_interval = token_refresh_interval
+        self.server_url = server_url
+        self.username = username
+        self.password = password
+        self.health_file = health_file
         self.query = None
         self.current_scenario_index = 0
         self.total_scenarios = len(SCENARIOS)
@@ -93,6 +111,20 @@ class TimedTaskRunner:
     def setup(self):
         """设置环境，创建Query对象并登录"""
         self.logger.info("正在设置定时任务环境...")
+        
+        # 如果提供了服务器地址、用户名和密码，则设置环境变量
+        if self.server_url:
+            os.environ["TS_BASE_URL"] = self.server_url
+            self.logger.info(f"使用命令行参数设置服务器地址: {self.server_url}")
+            
+        if self.username:
+            os.environ["TS_USERNAME"] = self.username
+            self.logger.info(f"使用命令行参数设置用户名: {self.username}")
+            
+        if self.password:
+            os.environ["TS_PASSWORD"] = self.password
+            self.logger.info("使用命令行参数设置密码")
+        
         # 检查配置
         if not check_config():
             self.logger.error("配置检查失败，无法连接到服务器")
@@ -157,15 +189,15 @@ class TimedTaskRunner:
 
             # 更新健康检查文件，用于Docker容器健康检查
             try:
-                health_file = "/tmp/timed_task_health"
-                with open(health_file, "w") as f:
+                with open(self.health_file, "w") as f:
                     f.write(f"Last execution: {current_time}\n")
                     f.write(f"Last scenario: {scenario_name}\n")
                     f.write(
-                        f"Last token refresh: {datetime.datetime.fromtimestamp(self.last_token_refresh).strftime('%Y-%m-%d %H:%M:%S')}\n"
+                        f"Last token refresh: {datetime.datetime.fromtimestamp(
+                            self.last_token_refresh).strftime('%Y-%m-%d %H:%M:%S')}\n"
                     )
                     f.write(f"Timezone: {os.environ.get('TZ', 'not set')}\n")
-                self.logger.debug(f"已更新健康检查文件: {health_file}")
+                self.logger.debug(f"已更新健康检查文件: {self.health_file}")
             except Exception as e:
                 self.logger.warning(f"无法更新健康检查文件: {e}")
         except Exception as e:
@@ -241,6 +273,31 @@ def parse_args():
         default="INFO",
         help="日志级别，默认为INFO",
     )
+    
+    parser.add_argument(
+        "--server",
+        type=str,
+        help="Train-Ticket服务器地址",
+    )
+    
+    parser.add_argument(
+        "--username",
+        type=str,
+        help="登录用户名",
+    )
+    
+    parser.add_argument(
+        "--password",
+        type=str,
+        help="登录密码",
+    )
+    
+    parser.add_argument(
+        "--health-file",
+        type=str,
+        default="/tmp/timed_task_health",
+        help="健康检查文件路径，默认为/tmp/timed_task_health",
+    )
 
     return parser.parse_args()
 
@@ -260,7 +317,12 @@ def main():
 
     # 创建并启动定时任务执行器
     runner = TimedTaskRunner(
-        interval_seconds=args.interval, token_refresh_interval=args.token_refresh
+        interval_seconds=args.interval, 
+        token_refresh_interval=args.token_refresh,
+        server_url=args.server,
+        username=args.username,
+        password=args.password,
+        health_file=args.health_file
     )
     runner.start()
 

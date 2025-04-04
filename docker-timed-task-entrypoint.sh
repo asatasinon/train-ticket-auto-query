@@ -47,7 +47,7 @@ fi
 echo "正在启动定时任务，间隔时间: ${TS_TIMED_TASK_INTERVAL}秒，token刷新间隔: ${TS_TOKEN_REFRESH_INTERVAL}秒..."
 
 # 启动定时任务
-exec python3 -m src.timed_task \
+exec python -m src.timed_task \
   --server "$TS_BASE_URL" \
   --username "$TS_USERNAME" \
   --password "$TS_PASSWORD" \

@@ -53,7 +53,7 @@ RUN chmod +x /app/docker-timed-task-entrypoint.sh && \
 
 # 设置健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import os, sys, time; sys.exit(0 if os.path.exists('/tmp/timed_task_health') and time.time() - os.path.getmtime('/tmp/timed_task_health') < 120 else 1)" || exit 1
+    CMD python -c "import os, sys, time; sys.exit(0 if os.path.exists('/tmp/health_check') and time.time() - os.path.getmtime('/tmp/health_check') < 120 else 1)" || exit 1
 
 # 设置入口点
 CMD ["/bin/bash", "/app/docker-timed-task-entrypoint.sh"] 

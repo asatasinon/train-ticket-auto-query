@@ -3,11 +3,11 @@ FROM python:3.11-slim
 # 设置工作目录
 WORKDIR /app
 
-# 安装必要的系统依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    tzdata \
-    && rm -rf /var/lib/apt/lists/*
+# # 安装必要的系统依赖
+# RUN apt-get update && apt-get install -y --no-install-recommends \
+#     curl \
+#     tzdata \
+#     && rm -rf /var/lib/apt/lists/*
 
 # 设置时区为中国上海时间（东八区）
 ENV TZ=Asia/Shanghai
