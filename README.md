@@ -263,6 +263,7 @@ environment:
   TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
   TS_TOKEN_REFRESH_INTERVAL: "1800"  # token刷新间隔（秒，默认30分钟）
   TS_LOG_LEVEL: "INFO"  # 日志级别
+  TZ: "Asia/Shanghai"  # 设置容器时区为东八区（北京/上海时间）
 ```
 
 ### 执行压测
@@ -386,3 +387,13 @@ python tests/test_connection.py
 ## 文档
 
 - [压测工具使用说明](docs/stress_testing.md) - 详细的压测配置和使用指南
+
+### 时区设置
+
+本项目默认使用中国标准时间（CST，即UTC+8，Asia/Shanghai时区）。在Docker容器中，时区通过以下方式设置：
+
+1. Dockerfile中设置了TZ环境变量并配置了系统时区
+2. docker-compose.yml中通过环境变量TZ="Asia/Shanghai"设置
+3. Python代码中使用os.environ['TZ']和time.tzset()设置当前进程的时区
+
+如需使用其他时区，可修改docker-compose.yml中的TZ环境变量。

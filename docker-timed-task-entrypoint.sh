@@ -5,6 +5,8 @@ set -e
 echo "启动 Train-Ticket 自动查询工具定时任务..."
 echo "Python 版本: $(python --version)"
 echo "当前目录: $(pwd)"
+echo "当前时间: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo "系统时区: $(cat /etc/timezone) ($(date +%z))"
 echo "环境变量:"
 echo "- TS_BASE_URL: $TS_BASE_URL"
 echo "- TS_LOG_LEVEL: $TS_LOG_LEVEL"

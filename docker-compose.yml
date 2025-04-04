@@ -17,6 +17,7 @@ services:
       # TS_USERNAME: "你的用户名"
       # TS_PASSWORD: "你的密码"
       # TS_LOG_LEVEL: "DEBUG"  # 设置为DEBUG查看更详细日志
+       TZ: "Asia/Shanghai"  # 设置时区为东八区（上海）
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/"]
@@ -41,6 +42,7 @@ services:
       TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
       TS_TOKEN_REFRESH_INTERVAL: "1800"  # token刷新间隔，默认30分钟
       TS_LOG_LEVEL: "INFO"  # 日志级别
+      TZ: "Asia/Shanghai"  # 设置时区为东八区（上海）
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(0 if os.path.exists('/tmp/timed_task_health') and time.time() - os.path.getmtime('/tmp/timed_task_health') < 120 else 1)"]

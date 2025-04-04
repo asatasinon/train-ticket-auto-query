@@ -6,6 +6,8 @@ set -e
 echo "启动 Train-Ticket 自动查询工具 Web 应用..."
 echo "Python 版本: $(python --version)"
 echo "当前目录: $(pwd)"
+echo "当前时间: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo "系统时区: $(cat /etc/timezone) ($(date +%z))"
 echo "文件权限检查:"
 ls -la /app/docker-entrypoint.sh
 echo "环境变量:"

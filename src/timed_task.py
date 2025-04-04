@@ -21,7 +21,17 @@ import sys
 import time
 import schedule
 import datetime
+import os
 from pathlib import Path
+
+# 设置时区为中国上海时间（东八区）
+os.environ["TZ"] = "Asia/Shanghai"
+try:
+    time.tzset()  # 在Unix系统上应用时区设置
+    print(f"时区已设置为: {os.environ['TZ']}")
+except AttributeError:
+    # Windows系统不支持tzset()
+    print("在当前操作系统上无法设置时区，时间可能不准确")
 
 # 添加项目根目录到Python路径，以便于直接运行此文件
 if __name__ == "__main__":
@@ -117,7 +127,7 @@ class TimedTaskRunner:
                 self.logger.info("Token刷新成功")
             else:
                 self.logger.error("Token刷新失败")
-    
+
     def token_refresh_scheduler(self):
         """定期刷新token的调度方法"""
         self.refresh_token_if_needed()
@@ -140,9 +150,7 @@ class TimedTaskRunner:
             f"开始执行场景: {scenario_name}"
         )
         try:
-            current_time = datetime.datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.logger.info(f"执行时间: {current_time}")
             scenario_func(self.query)
             self.logger.info(f"场景 {scenario_name} 执行完成")
@@ -153,7 +161,10 @@ class TimedTaskRunner:
                 with open(health_file, "w") as f:
                     f.write(f"Last execution: {current_time}\n")
                     f.write(f"Last scenario: {scenario_name}\n")
-                    f.write(f"Last token refresh: {self.last_token_refresh}\n")
+                    f.write(
+                        f"Last token refresh: {datetime.datetime.fromtimestamp(self.last_token_refresh).strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    )
+                    f.write(f"Timezone: {os.environ.get('TZ', 'not set')}\n")
                 self.logger.debug(f"已更新健康检查文件: {health_file}")
             except Exception as e:
                 self.logger.warning(f"无法更新健康检查文件: {e}")
@@ -180,7 +191,7 @@ class TimedTaskRunner:
 
         # 设置定时任务
         schedule.every(self.interval).seconds.do(self.run_next_scenario)
-        
+
         # 设置token刷新任务
         # 每5分钟检查一次token是否需要刷新
         token_check_interval = min(300, self.token_refresh_interval / 2)
@@ -249,8 +260,7 @@ def main():
 
     # 创建并启动定时任务执行器
     runner = TimedTaskRunner(
-        interval_seconds=args.interval,
-        token_refresh_interval=args.token_refresh
+        interval_seconds=args.interval, token_refresh_interval=args.token_refresh
     )
     runner.start()
 
