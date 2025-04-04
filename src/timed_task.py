@@ -192,10 +192,7 @@ class TimedTaskRunner:
                 with open(self.health_file, "w") as f:
                     f.write(f"Last execution: {current_time}\n")
                     f.write(f"Last scenario: {scenario_name}\n")
-                    f.write(
-                        f"Last token refresh: {datetime.datetime.fromtimestamp(
-                            self.last_token_refresh).strftime('%Y-%m-%d %H:%M:%S')}\n"
-                    )
+                    f.write(f"Last token refresh: {datetime.datetime.fromtimestamp(self.last_token_refresh).strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write(f"Timezone: {os.environ.get('TZ', 'not set')}\n")
                 self.logger.debug(f"已更新健康检查文件: {self.health_file}")
             except Exception as e:
