@@ -188,27 +188,42 @@ python -m src.main --batch 50
 
 **Linux/macOS**:
 ```bash
-# 使用默认参数（间隔60秒，INFO日志级别）
+# 启动定时任务（默认60秒间隔）
 ./start_timed_task.sh
 
-# 自定义间隔（30秒）
-./start_timed_task.sh 30
+# 指定间隔时间和日志级别
+./start_timed_task.sh -i 120 -l DEBUG
 
-# 自定义间隔和日志级别
-./start_timed_task.sh 30 DEBUG
+# 指定token刷新间隔（默认1800秒，即30分钟）
+./start_timed_task.sh -r 3600
+
+# 显示帮助信息
+./start_timed_task.sh -h
 ```
 
 **Windows**:
 ```cmd
-# 使用默认参数（间隔60秒，INFO日志级别）
+# 启动定时任务（默认60秒间隔）
 start_timed_task.bat
 
-# 自定义间隔（30秒）
-start_timed_task.bat 30
+# 指定间隔时间和日志级别
+start_timed_task.bat -i 120 -l DEBUG
 
-# 自定义间隔和日志级别
-start_timed_task.bat 30 DEBUG
+# 指定token刷新间隔（默认1800秒，即30分钟）
+start_timed_task.bat -r 3600
+
+# 显示帮助信息
+start_timed_task.bat -h
 ```
+
+可用参数：
+- `-i, --interval`: 设置定时任务的执行间隔，单位为秒，默认60秒
+- `-r, --token-refresh`: 设置token刷新间隔，单位为秒，默认1800秒（30分钟）
+- `-l, --log-level`: 设置日志级别 (DEBUG, INFO, WARNING, ERROR)，默认INFO
+- `-s, --server`: 设置服务器地址
+- `-u, --username`: 设置用户名
+- `-p, --password`: 设置密码
+- `-h, --help`: 显示帮助信息
 
 #### 直接使用Python
 
@@ -246,6 +261,7 @@ environment:
   TS_USERNAME: "your_username"
   TS_PASSWORD: "your_password"
   TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
+  TS_TOKEN_REFRESH_INTERVAL: "1800"  # token刷新间隔（秒，默认30分钟）
   TS_LOG_LEVEL: "INFO"  # 日志级别
 ```
 

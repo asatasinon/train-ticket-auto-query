@@ -11,6 +11,7 @@ Train-Ticket 定时任务工具
     python -m src.timed_task  # 使用默认间隔（1分钟）执行
     python -m src.timed_task --interval 30  # 使用自定义间隔（30秒）执行
     python -m src.timed_task --log-level DEBUG  # 使用指定日志级别执行
+    python -m src.timed_task --token-refresh 1800  # 自定义token刷新间隔（秒）
     python -m src.timed_task --help  # 显示帮助信息
 """
 
@@ -62,19 +63,22 @@ SCENARIOS = [
 class TimedTaskRunner:
     """定时任务执行器类"""
 
-    def __init__(self, interval_seconds=60):
+    def __init__(self, interval_seconds=60, token_refresh_interval=1800):
         """
         初始化定时任务执行器
 
         Args:
             interval_seconds: 任务执行间隔（秒）
+            token_refresh_interval: token刷新间隔（秒），默认30分钟
         """
         self.logger = logging.getLogger("timed-task")
         self.interval = interval_seconds
+        self.token_refresh_interval = token_refresh_interval
         self.query = None
         self.current_scenario_index = 0
         self.total_scenarios = len(SCENARIOS)
         self.running = False
+        self.last_token_refresh = time.time()
 
     def setup(self):
         """设置环境，创建Query对象并登录"""
@@ -93,14 +97,39 @@ class TimedTaskRunner:
             self.logger.error("登录失败！")
             return False
 
+        # 记录当前token刷新时间
+        self.last_token_refresh = time.time()
         self.logger.info(f"登录成功！用户ID: {self.query.uid}")
         return True
+
+    def refresh_token_if_needed(self):
+        """检查并刷新token（如果需要）"""
+        current_time = time.time()
+        # 如果距离上次刷新token的时间超过了设定的间隔，则刷新token
+        if current_time - self.last_token_refresh >= self.token_refresh_interval:
+            self.logger.info(
+                f"距离上次刷新token已经过去了"
+                f"{int((current_time - self.last_token_refresh) / 60)}分钟，"
+                f"开始刷新token"
+            )
+            if self.query.refresh_token():
+                self.last_token_refresh = current_time
+                self.logger.info("Token刷新成功")
+            else:
+                self.logger.error("Token刷新失败")
+    
+    def token_refresh_scheduler(self):
+        """定期刷新token的调度方法"""
+        self.refresh_token_if_needed()
 
     def run_next_scenario(self):
         """执行下一个场景"""
         if not self.query:
             self.logger.error("Query对象未初始化，请先调用setup方法")
             return
+
+        # 刷新token（如果需要）
+        self.refresh_token_if_needed()
 
         # 获取当前要执行的场景
         scenario_name, scenario_func = SCENARIOS[self.current_scenario_index]
@@ -111,7 +140,9 @@ class TimedTaskRunner:
             f"开始执行场景: {scenario_name}"
         )
         try:
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            current_time = datetime.datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
             self.logger.info(f"执行时间: {current_time}")
             scenario_func(self.query)
             self.logger.info(f"场景 {scenario_name} 执行完成")
@@ -122,6 +153,7 @@ class TimedTaskRunner:
                 with open(health_file, "w") as f:
                     f.write(f"Last execution: {current_time}\n")
                     f.write(f"Last scenario: {scenario_name}\n")
+                    f.write(f"Last token refresh: {self.last_token_refresh}\n")
                 self.logger.debug(f"已更新健康检查文件: {health_file}")
             except Exception as e:
                 self.logger.warning(f"无法更新健康检查文件: {e}")
@@ -141,12 +173,18 @@ class TimedTaskRunner:
 
         self.running = True
         self.logger.info(f"定时任务已启动，将每 {self.interval} 秒执行一个场景")
+        self.logger.info(f"Token将每 {self.token_refresh_interval} 秒刷新一次")
 
         # 立即执行一次第一个场景
         self.run_next_scenario()
 
         # 设置定时任务
         schedule.every(self.interval).seconds.do(self.run_next_scenario)
+        
+        # 设置token刷新任务
+        # 每5分钟检查一次token是否需要刷新
+        token_check_interval = min(300, self.token_refresh_interval / 2)
+        schedule.every(token_check_interval).seconds.do(self.token_refresh_scheduler)
 
         # 主循环
         try:
@@ -179,6 +217,13 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--token-refresh",
+        type=int,
+        default=1800,
+        help="token刷新间隔（秒），默认为1800秒（30分钟）",
+    )
+
+    parser.add_argument(
         "--log-level",
         type=str,
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -203,7 +248,10 @@ def main():
     logger.info("=" * 50)
 
     # 创建并启动定时任务执行器
-    runner = TimedTaskRunner(interval_seconds=args.interval)
+    runner = TimedTaskRunner(
+        interval_seconds=args.interval,
+        token_refresh_interval=args.token_refresh
+    )
     runner.start()
 
     return 0

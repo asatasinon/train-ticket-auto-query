@@ -5,9 +5,72 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# 设置默认参数
-INTERVAL=${1:-60}
-LOG_LEVEL=${2:-INFO}
+# 默认设置
+INTERVAL=60
+TOKEN_REFRESH=1800
+LOG_LEVEL="INFO"
+SERVER=""
+USERNAME=""
+PASSWORD=""
+
+# 解析参数
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    -i|--interval)
+      INTERVAL="$2"
+      shift
+      shift
+      ;;
+    -r|--token-refresh)
+      TOKEN_REFRESH="$2"
+      shift
+      shift
+      ;;
+    -l|--log-level)
+      LOG_LEVEL="$2"
+      shift
+      shift
+      ;;
+    -s|--server)
+      SERVER="$2"
+      shift
+      shift
+      ;;
+    -u|--username)
+      USERNAME="$2"
+      shift
+      shift
+      ;;
+    -p|--password)
+      PASSWORD="$2"
+      shift
+      shift
+      ;;
+    -h|--help)
+      echo "使用方法: $0 [选项]"
+      echo "选项:"
+      echo "  -i, --interval 秒数     设置定时任务的执行间隔，默认60秒"
+      echo "  -r, --token-refresh 秒数 设置token刷新间隔，默认1800秒(30分钟)"
+      echo "  -l, --log-level 级别     设置日志级别 (DEBUG, INFO, WARNING, ERROR)，默认INFO"
+      echo "  -s, --server 地址        设置服务器地址"
+      echo "  -u, --username 用户名    设置用户名"
+      echo "  -p, --password 密码      设置密码"
+      echo "  -h, --help               显示此帮助信息"
+      exit 0
+      ;;
+    *)
+      echo "未知参数: $1"
+      exit 1
+      ;;
+  esac
+done
+
+# 检查服务器地址、用户名和密码
+SERVER_ARGS=""
+if [ -n "$SERVER" ] && [ -n "$USERNAME" ] && [ -n "$PASSWORD" ]; then
+  SERVER_ARGS="--server $SERVER --username $USERNAME --password $PASSWORD"
+fi
 
 # 激活虚拟环境（如果存在）
 if [ -d ".venv" ]; then
@@ -21,12 +84,18 @@ fi
 # 输出启动信息
 echo "===== 启动 Train-Ticket 定时任务 ====="
 echo "间隔时间: ${INTERVAL}秒"
+echo "token刷新间隔: ${TOKEN_REFRESH}秒"
 echo "日志级别: ${LOG_LEVEL}"
 echo "开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "======================================="
 
 # 启动定时任务
-python -m src.timed_task --interval $INTERVAL --log-level $LOG_LEVEL
+nohup python -m src.timed_task --interval "$INTERVAL" --token-refresh "$TOKEN_REFRESH" --log-level "$LOG_LEVEL" $SERVER_ARGS > timed_task.log 2>&1 &
+
+# 保存进程ID
+echo $! > timed_task.pid
+echo "定时任务已启动，进程ID: $(cat timed_task.pid)"
+echo "日志保存在 timed_task.log"
 
 # 如果命令异常退出，输出错误信息
 if [ $? -ne 0 ]; then

@@ -720,3 +720,22 @@ class Query:
             logger.error(
                 f"preserve failed, code: {res.status_code}, {res.text}")
         return
+
+    def refresh_token(self) -> bool:
+        """
+        刷新token，避免token过期
+        
+        Returns:
+            刷新是否成功
+        """
+        logger.info("正在刷新token...")
+        
+        # 直接重新登录以获取新的token
+        result = self.login()
+        
+        if result:
+            logger.info(f"成功刷新token，新用户ID: {self.uid}")
+        else:
+            logger.error("刷新token失败")
+        
+        return result

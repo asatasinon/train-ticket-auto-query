@@ -9,6 +9,7 @@ echo "环境变量:"
 echo "- TS_BASE_URL: $TS_BASE_URL"
 echo "- TS_LOG_LEVEL: $TS_LOG_LEVEL"
 echo "- TS_TIMED_TASK_INTERVAL: $TS_TIMED_TASK_INTERVAL"
+echo "- TS_TOKEN_REFRESH_INTERVAL: $TS_TOKEN_REFRESH_INTERVAL"
 
 # 检查目录结构
 if [ ! -d "src" ]; then
@@ -34,6 +35,21 @@ if [ -z "$TS_TIMED_TASK_INTERVAL" ]; then
     echo "未设置TS_TIMED_TASK_INTERVAL，使用默认值: 60秒"
 fi
 
+# 设置默认的token刷新间隔（如果未指定）
+if [ -z "$TS_TOKEN_REFRESH_INTERVAL" ]; then
+    export TS_TOKEN_REFRESH_INTERVAL=1800
+    echo "未设置TS_TOKEN_REFRESH_INTERVAL，使用默认值: 1800秒（30分钟）"
+fi
+
 # 启动定时任务
-echo "正在启动定时任务，间隔时间: ${TS_TIMED_TASK_INTERVAL}秒..."
-exec python -m src.timed_task --interval $TS_TIMED_TASK_INTERVAL --log-level $TS_LOG_LEVEL 
+echo "正在启动定时任务，间隔时间: ${TS_TIMED_TASK_INTERVAL}秒，token刷新间隔: ${TS_TOKEN_REFRESH_INTERVAL}秒..."
+
+# 启动定时任务
+exec python3 -m src.timed_task \
+  --server "$TS_BASE_URL" \
+  --username "$TS_USERNAME" \
+  --password "$TS_PASSWORD" \
+  --interval "$TS_TIMED_TASK_INTERVAL" \
+  --token-refresh "$TS_TOKEN_REFRESH_INTERVAL" \
+  --health-file "/tmp/health_check" \
+  --log-level "$TS_LOG_LEVEL" 
