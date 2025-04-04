@@ -442,7 +442,6 @@ class Query:
         :return: TripId 列表
         """
 
-        url = f"{self.address}/api/v1/travelservice/trips/left_parallel"
         place_pairs = [("Shang Hai", "Su Zhou"),
                        ("Su Zhou", "Shang Hai"),
                        ("Nan Jing", "Shang Hai")]
@@ -453,13 +452,16 @@ class Query:
         if time == "":
             time = datestr
 
-        payload = {
+        # 改为GET请求，使用params传递参数而不是json
+        url = f"{self.address}/api/v1/travelservice/trips/left_parallel"
+        params = {
             "departureTime": time,
             "startingPlace": place_pair[0],
             "endPlace": place_pair[1],
         }
 
-        response = self.session.post(url=url, headers=headers, json=payload)
+        # 使用GET方法而不是POST方法
+        response = self.session.get(url=url, params=params, headers=headers)
 
         if response.status_code != 200 or response.json().get("data") is None:
             logger.warning(

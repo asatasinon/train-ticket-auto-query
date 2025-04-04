@@ -398,3 +398,15 @@ python tests/test_connection.py
 3. Python代码中使用os.environ['TZ']和time.tzset()设置当前进程的时区
 
 如需使用其他时区，可修改docker-compose.yml中的TZ环境变量。
+
+### 已知问题
+
+#### 并行查询场景已移除
+
+由于API兼容性问题，并行查询车票场景(`query_ticket_parallel_scenario`)已从定时任务中移除。该场景使用的API端点`/api/v1/travelservice/trips/left_parallel`在某些服务器环境中存在兼容性问题，具体表现为HTTP 405错误(Method Not Allowed)或返回无内容的响应。
+
+如需测试并行查询场景，可以单独执行：
+
+```bash
+python -m src.main --scenario parallel
+```

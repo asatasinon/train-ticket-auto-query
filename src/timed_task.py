@@ -47,7 +47,7 @@ from src.core.queries import Query
 from src.scenarios.scenarios import (
     query_high_speed_ticket_scenario,
     query_normal_ticket_scenario,
-    query_ticket_parallel_scenario,
+    query_ticket_parallel_scenario,  # 导入但不使用
     query_food_scenario,
     query_and_book_ticket_scenario,
     query_and_pay_ticket,
@@ -57,11 +57,15 @@ from src.scenarios.scenarios import (
     query_and_cancel_ticket,
 )
 
+# 注意：并行查询场景(query_ticket_parallel_scenario)已从定时任务中移除
+# 原因：该场景使用的API端点在某些服务器环境中存在兼容性问题
+# 具体表现为HTTP 405错误(Method Not Allowed)或返回无内容的响应
+
 # 场景列表，按实际使用场景的先后顺序排序
 SCENARIOS = [
     ("查询高铁票", query_high_speed_ticket_scenario),
     ("查询普通列车票", query_normal_ticket_scenario),
-    ("并行查询车票", query_ticket_parallel_scenario),
+    # 已移除：("并行查询车票", query_ticket_parallel_scenario)
     ("查询食品", query_food_scenario),
     ("预订车票", query_and_book_ticket_scenario),
     ("支付订单", query_and_pay_ticket),

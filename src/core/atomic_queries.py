@@ -137,17 +137,17 @@ def _query_high_speed_ticket_parallel(place_pair: tuple = ("Shang Hai", "Su Zhou
                    ("Su Zhou", "Shang Hai"),
                    ("Nan Jing", "Shang Hai")]
 
-    payload = {
+    # 改为GET请求，使用params传递参数而不是json
+    params = {
         "departureTime": time,
         "startingPlace": place_pair[0],
         "endPlace": place_pair[1],
     }
 
-    response = requests.post(url=url,
-                             headers=headers,
-                             json=payload)
+    # 使用GET方法而不是POST方法
+    response = requests.get(url=url, params=params, headers=headers)
 
-    if response.status_code is not 200 or response.json().get("data") is None:
+    if response.status_code != 200 or response.json().get("data") is None:
         logger.warning(f"request for {url} failed. response data is {response.text}")
         return None
 
