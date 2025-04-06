@@ -3,7 +3,6 @@ setlocal
 
 :: 设置默认值
 set INTERVAL=60
-set TOKEN_REFRESH=1800
 set LOG_LEVEL=INFO
 set SERVER=
 set USERNAME=
@@ -20,18 +19,6 @@ if /i "%~1" == "-i" (
 )
 if /i "%~1" == "--interval" (
     set INTERVAL=%~2
-    shift /1
-    shift /1
-    goto :parse_args
-)
-if /i "%~1" == "-r" (
-    set TOKEN_REFRESH=%~2
-    shift /1
-    shift /1
-    goto :parse_args
-)
-if /i "%~1" == "--token-refresh" (
-    set TOKEN_REFRESH=%~2
     shift /1
     shift /1
     goto :parse_args
@@ -98,7 +85,6 @@ exit /b 1
 echo 使用方法: %0 [选项]
 echo 选项:
 echo   -i, --interval 秒数     设置定时任务的执行间隔，默认60秒
-echo   -r, --token-refresh 秒数 设置token刷新间隔，默认1800秒(30分钟)
 echo   -l, --log-level 级别     设置日志级别 (DEBUG, INFO, WARNING, ERROR)，默认INFO
 echo   -s, --server 地址        设置服务器地址
 echo   -u, --username 用户名    设置用户名
@@ -127,13 +113,12 @@ if not "%SERVER%"=="" (
 
 echo ===== 启动 Train-Ticket 定时任务 =====
 echo 间隔时间: %INTERVAL%秒
-echo token刷新间隔: %TOKEN_REFRESH%秒
 echo 日志级别: %LOG_LEVEL%
 echo 开始时间: %date% %time%
 echo =======================================
 
 :: 启动定时任务
-start /b python -m src.timed_task --interval "%INTERVAL%" --token-refresh "%TOKEN_REFRESH%" --log-level "%LOG_LEVEL%" %SERVER_ARGS% > timed_task.log 2>&1
+start /b python -m src.timed_task --interval "%INTERVAL%" --log-level "%LOG_LEVEL%" %SERVER_ARGS% > timed_task.log 2>&1
 
 echo 定时任务已在后台启动
 echo 日志保存在 timed_task.log

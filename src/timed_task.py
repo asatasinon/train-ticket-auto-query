@@ -5,13 +5,12 @@
 Train-Ticket 定时任务工具
 
 这是一个用于按顺序循环执行所有场景的定时任务工具。
-每隔一分钟执行一个场景，执行完所有场景后重新开始循环。
+每隔一分钟执行一个场景，执行完所有场景后退出登录并重新开始循环。
 
 使用方法：
     python -m src.timed_task  # 使用默认间隔（1分钟）执行
     python -m src.timed_task --interval 30  # 使用自定义间隔（30秒）执行
     python -m src.timed_task --log-level DEBUG  # 使用指定日志级别执行
-    python -m src.timed_task --token-refresh 1800  # 自定义token刷新间隔（秒）
     python -m src.timed_task --server http://example.com --username user --password pass  # 指定连接参数
     python -m src.timed_task --health-file /path/to/health  # 指定健康检查文件路径
     python -m src.timed_task --help  # 显示帮助信息
@@ -82,7 +81,6 @@ class TimedTaskRunner:
     def __init__(
         self, 
         interval_seconds=60, 
-        token_refresh_interval=1800,
         server_url=None,
         username=None,
         password=None,
@@ -93,7 +91,6 @@ class TimedTaskRunner:
 
         Args:
             interval_seconds: 任务执行间隔（秒）
-            token_refresh_interval: token刷新间隔（秒），默认30分钟
             server_url: 服务器地址，如果提供则覆盖环境变量
             username: 用户名，如果提供则覆盖环境变量
             password: 密码，如果提供则覆盖环境变量
@@ -101,7 +98,6 @@ class TimedTaskRunner:
         """
         self.logger = logging.getLogger("timed-task")
         self.interval = interval_seconds
-        self.token_refresh_interval = token_refresh_interval
         self.server_url = server_url
         self.username = username
         self.password = password
@@ -110,7 +106,7 @@ class TimedTaskRunner:
         self.current_scenario_index = 0
         self.total_scenarios = len(SCENARIOS)
         self.running = False
-        self.last_token_refresh = time.time()
+        self.last_login_time = None
 
     def setup(self):
         """设置环境，创建Query对象并登录"""
@@ -134,48 +130,50 @@ class TimedTaskRunner:
             self.logger.error("配置检查失败，无法连接到服务器")
             return False
 
-        # 创建Query对象
-        self.query = Query()
+        # 登录（如果需要）
+        if not self.login():
+            return False
 
+        return True
+        
+    def login(self):
+        """执行登录操作"""
+        # 创建新的Query对象
+        self.query = Query()
+        
         # 登录
         self.logger.info("正在登录...")
         if not self.query.login():
             self.logger.error("登录失败！")
             return False
 
-        # 记录当前token刷新时间
-        self.last_token_refresh = time.time()
+        self.last_login_time = time.time()
         self.logger.info(f"登录成功！用户ID: {self.query.uid}")
         return True
-
-    def refresh_token_if_needed(self):
-        """检查并刷新token（如果需要）"""
-        current_time = time.time()
-        # 如果距离上次刷新token的时间超过了设定的间隔，则刷新token
-        if current_time - self.last_token_refresh >= self.token_refresh_interval:
-            self.logger.info(
-                f"距离上次刷新token已经过去了"
-                f"{int((current_time - self.last_token_refresh) / 60)}分钟，"
-                f"开始刷新token"
-            )
-            if self.query.refresh_token():
-                self.last_token_refresh = current_time
-                self.logger.info("Token刷新成功")
-            else:
-                self.logger.error("Token刷新失败")
-
-    def token_refresh_scheduler(self):
-        """定期刷新token的调度方法"""
-        self.refresh_token_if_needed()
+        
+    def logout(self):
+        """执行退出登录操作"""
+        if self.query and self.query.uid:
+            self.logger.info(f"正在退出登录，用户ID: {self.query.uid}")
+            # 清理身份验证信息
+            self.query.token = ""
+            self.query.uid = ""
+            # 移除会话中的认证头
+            if "Authorization" in self.query.session.headers:
+                del self.query.session.headers["Authorization"]
+            self.logger.info("退出登录成功")
+            # 设置query为None，以便下次运行时创建新的Query对象
+            self.query = None
+            return True
+        return False
 
     def run_next_scenario(self):
         """执行下一个场景"""
+        # 如果没有登录或者Query对象不存在，重新登录
         if not self.query:
-            self.logger.error("Query对象未初始化，请先调用setup方法")
-            return
-
-        # 刷新token（如果需要）
-        self.refresh_token_if_needed()
+            if not self.login():
+                self.logger.error("登录失败，无法继续执行场景")
+                return
 
         # 获取当前要执行的场景
         scenario_name, scenario_func = SCENARIOS[self.current_scenario_index]
@@ -196,7 +194,7 @@ class TimedTaskRunner:
                 with open(self.health_file, "w") as f:
                     f.write(f"Last execution: {current_time}\n")
                     f.write(f"Last scenario: {scenario_name}\n")
-                    f.write(f"Last token refresh: {datetime.datetime.fromtimestamp(self.last_token_refresh).strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"Last login: {datetime.datetime.fromtimestamp(self.last_login_time).strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write(f"Timezone: {os.environ.get('TZ', 'not set')}\n")
                 self.logger.debug(f"已更新健康检查文件: {self.health_file}")
             except Exception as e:
@@ -208,6 +206,11 @@ class TimedTaskRunner:
         self.current_scenario_index = (
             self.current_scenario_index + 1
         ) % self.total_scenarios
+        
+        # 如果已完成所有场景（即索引回到0），则退出登录，以便下次循环时重新登录
+        if self.current_scenario_index == 0:
+            self.logger.info("已完成所有场景，退出登录以便下次循环时重新登录")
+            self.logout()
 
     def start(self):
         """启动定时任务"""
@@ -217,18 +220,13 @@ class TimedTaskRunner:
 
         self.running = True
         self.logger.info(f"定时任务已启动，将每 {self.interval} 秒执行一个场景")
-        self.logger.info(f"Token将每 {self.token_refresh_interval} 秒刷新一次")
+        self.logger.info("每完成一轮所有场景后，将退出登录并在下次循环开始时重新登录")
 
         # 立即执行一次第一个场景
         self.run_next_scenario()
 
         # 设置定时任务
         schedule.every(self.interval).seconds.do(self.run_next_scenario)
-
-        # 设置token刷新任务
-        # 每5分钟检查一次token是否需要刷新
-        token_check_interval = min(300, self.token_refresh_interval / 2)
-        schedule.every(token_check_interval).seconds.do(self.token_refresh_scheduler)
 
         # 主循环
         try:
@@ -241,6 +239,9 @@ class TimedTaskRunner:
             self.logger.error(f"执行过程中出现错误: {e}")
         finally:
             self.running = False
+            # 确保退出时进行登出
+            if self.query:
+                self.logout()
             self.logger.info("定时任务已结束")
 
     def stop(self):
@@ -258,13 +259,6 @@ def parse_args():
         type=int,
         default=60,
         help="任务执行间隔（秒），默认为60秒（1分钟）",
-    )
-
-    parser.add_argument(
-        "--token-refresh",
-        type=int,
-        default=1800,
-        help="token刷新间隔（秒），默认为1800秒（30分钟）",
     )
 
     parser.add_argument(
@@ -319,7 +313,6 @@ def main():
     # 创建并启动定时任务执行器
     runner = TimedTaskRunner(
         interval_seconds=args.interval, 
-        token_refresh_interval=args.token_refresh,
         server_url=args.server,
         username=args.username,
         password=args.password,

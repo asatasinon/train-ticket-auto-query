@@ -40,7 +40,8 @@ services:
       # TS_USERNAME: "你的用户名"
       # TS_PASSWORD: "你的密码"
       TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
-      TS_TOKEN_REFRESH_INTERVAL: "1800"  # token刷新间隔，默认30分钟
+      # 不再使用token刷新机制，改为每次完成所有场景后退出登录，下次循环开始时重新登录
+      # TS_TOKEN_REFRESH_INTERVAL: "1800"  # token刷新间隔，默认30分钟
       TS_LOG_LEVEL: "INFO"  # 日志级别
       TZ: "Asia/Shanghai"  # 设置时区为东八区（上海）
     restart: unless-stopped

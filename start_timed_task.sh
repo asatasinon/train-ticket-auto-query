@@ -7,7 +7,6 @@ cd "$SCRIPT_DIR"
 
 # 默认设置
 INTERVAL=60
-TOKEN_REFRESH=1800
 LOG_LEVEL="INFO"
 SERVER=""
 USERNAME=""
@@ -19,11 +18,6 @@ while [[ $# -gt 0 ]]; do
   case $key in
     -i|--interval)
       INTERVAL="$2"
-      shift
-      shift
-      ;;
-    -r|--token-refresh)
-      TOKEN_REFRESH="$2"
       shift
       shift
       ;;
@@ -51,7 +45,6 @@ while [[ $# -gt 0 ]]; do
       echo "使用方法: $0 [选项]"
       echo "选项:"
       echo "  -i, --interval 秒数     设置定时任务的执行间隔，默认60秒"
-      echo "  -r, --token-refresh 秒数 设置token刷新间隔，默认1800秒(30分钟)"
       echo "  -l, --log-level 级别     设置日志级别 (DEBUG, INFO, WARNING, ERROR)，默认INFO"
       echo "  -s, --server 地址        设置服务器地址"
       echo "  -u, --username 用户名    设置用户名"
@@ -84,13 +77,12 @@ fi
 # 输出启动信息
 echo "===== 启动 Train-Ticket 定时任务 ====="
 echo "间隔时间: ${INTERVAL}秒"
-echo "token刷新间隔: ${TOKEN_REFRESH}秒"
 echo "日志级别: ${LOG_LEVEL}"
 echo "开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "======================================="
 
 # 启动定时任务
-nohup python -m src.timed_task --interval "$INTERVAL" --token-refresh "$TOKEN_REFRESH" --log-level "$LOG_LEVEL" $SERVER_ARGS > timed_task.log 2>&1 &
+nohup python -m src.timed_task --interval "$INTERVAL" --log-level "$LOG_LEVEL" $SERVER_ARGS > timed_task.log 2>&1 &
 
 # 保存进程ID
 echo $! > timed_task.pid
