@@ -46,31 +46,24 @@ train-ticket-auto-query/
 
 ### 安装 uv
 
-#### 方法 1: 通过安装脚本（推荐）
-
 **Linux/macOS**:
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-**Windows (PowerShell)**:
-```powershell
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
+## 制造故障
+```shell
 
-#### 方法 2: 通过 pip 安装
-```bash
-pip install uv
-```
+# 安装依赖
+uv sync
 
-#### 方法 3: 通过 Homebrew (macOS)
-```bash
-brew install uv
-```
+# 激活虚拟环境 (Linux/macOS)
+source .venv/bin/activate
 
-#### 方法 4: 通过 Conda
-```bash
-conda install -c conda-forge uv
+
+# 运行压测
+python -m src.stress
+
 ```
 
 ## 配置
@@ -98,50 +91,12 @@ TS_BATCH_INTERVAL=1
 TS_LOG_LEVEL=INFO
 
 # 压测配置
-TS_STRESS_CONCURRENT=10     # 压测并发数
-TS_STRESS_COUNT=100         # 压测总请求数
+TS_STRESS_CONCURRENT=100     # 压测并发数
+TS_STRESS_COUNT=1000         # 压测总请求数
 TS_STRESS_SCENARIO=high_speed  # 压测场景
-TS_STRESS_TIMEOUT=30        # 请求超时时间(秒)
+TS_STRESS_TIMEOUT=60        # 请求超时时间(秒)
 TS_STRESS_INTERVAL=0.1      # 并发线程启动间隔(秒)
 TS_STRESS_ERROR_RATE_THRESHOLD=0.1  # 可接受的错误率阈值
-```
-
-## 安装依赖
-
-### 使用 uv 安装（推荐）
-
-创建并激活虚拟环境：
-```bash
-# 创建虚拟环境
-uv venv
-
-# 激活虚拟环境 (Linux/macOS)
-source .venv/bin/activate
-# 或者 Windows
-.venv\Scripts\activate
-```
-
-安装项目依赖：
-```bash
-# 开发模式安装
-uv pip install -e .
-
-# 或者从requirements.txt安装
-uv pip install -r requirements.txt
-```
-
-### 使用传统 pip 安装
-```bash
-# 创建虚拟环境
-python -m venv venv
-
-# 激活虚拟环境 (Linux/macOS)
-source venv/bin/activate
-# 或者 Windows
-venv\Scripts\activate
-
-# 安装依赖
-pip install -e .
 ```
 
 ## 使用方法
