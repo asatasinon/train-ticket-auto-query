@@ -53,10 +53,10 @@ BATCH_COUNT = int(os.getenv('TS_BATCH_COUNT', 100))
 BATCH_INTERVAL = float(os.getenv('TS_BATCH_INTERVAL', 1))
 
 # 压测配置
-STRESS_CONCURRENT = int(os.getenv('TS_STRESS_CONCURRENT', 10))  # 压测并发数
-STRESS_COUNT = int(os.getenv('TS_STRESS_COUNT', 100))  # 压测请求总数
+STRESS_CONCURRENT = int(os.getenv('TS_STRESS_CONCURRENT', 100))  # 压测并发数
+STRESS_COUNT = int(os.getenv('TS_STRESS_COUNT', 1000))  # 压测请求总数
 STRESS_SCENARIO = os.getenv('TS_STRESS_SCENARIO', 'high_speed')  # 压测使用的场景
-STRESS_TIMEOUT = int(os.getenv('TS_STRESS_TIMEOUT', 30))  # 压测请求超时时间(秒)
+STRESS_TIMEOUT = int(os.getenv('TS_STRESS_TIMEOUT', 60))  # 压测请求超时时间(秒)
 STRESS_INTERVAL = float(os.getenv('TS_STRESS_INTERVAL', 0.1))  # 压测启动间隔(秒)
 STRESS_ERROR_RATE_THRESHOLD = float(os.getenv('TS_STRESS_ERROR_RATE_THRESHOLD', 0.1))  # 可接受的错误率阈值
 
