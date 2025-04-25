@@ -2,7 +2,7 @@
 setlocal
 
 :: 设置默认值
-set INTERVAL=60
+set INTERVAL=30
 set LOG_LEVEL=INFO
 set SERVER=
 set USERNAME=
@@ -84,7 +84,7 @@ exit /b 1
 :display_help
 echo 使用方法: %0 [选项]
 echo 选项:
-echo   -i, --interval 秒数     设置定时任务的执行间隔，默认60秒
+echo   -i, --interval 秒数     设置定时任务的执行间隔，默认30秒
 echo   -l, --log-level 级别     设置日志级别 (DEBUG, INFO, WARNING, ERROR)，默认INFO
 echo   -s, --server 地址        设置服务器地址
 echo   -u, --username 用户名    设置用户名

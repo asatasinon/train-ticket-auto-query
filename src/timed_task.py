@@ -67,11 +67,11 @@ SCENARIOS = [
     # 已移除：("并行查询车票", query_ticket_parallel_scenario)
     ("查询食品", query_food_scenario),
     ("预订车票", query_and_book_ticket_scenario),
-    ("支付订单", query_and_pay_ticket),
-    ("添加托运信息", query_and_consign),
-    ("取票", query_and_collect_ticket),
-    ("改签车票", query_and_rebook_ticket_scenario),
-    ("取消订单", query_and_cancel_ticket),
+    #("支付订单", query_and_pay_ticket),
+    #("添加托运信息", query_and_consign),
+    #("取票", query_and_collect_ticket),
+    #("改签车票", query_and_rebook_ticket_scenario),
+    #("取消订单", query_and_cancel_ticket),
 ]
 
 
@@ -80,7 +80,7 @@ class TimedTaskRunner:
 
     def __init__(
         self, 
-        interval_seconds=60, 
+        interval_seconds=30,
         server_url=None,
         username=None,
         password=None,
@@ -257,8 +257,8 @@ def parse_args():
     parser.add_argument(
         "--interval",
         type=int,
-        default=60,
-        help="任务执行间隔（秒），默认为60秒（1分钟）",
+        default=30,
+        help="任务执行间隔（秒），默认为30秒",
     )
 
     parser.add_argument(

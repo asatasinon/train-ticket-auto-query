@@ -34,9 +34,10 @@ class ScenarioRunner:
             scenario: 场景函数
             weight: 场景权重，权重越高被随机选中的概率越大
         """
-        self.scenarios.append(scenario)
-        self.scenario_weights[scenario.__name__] = weight
-        logger.debug(f"添加场景: {scenario.__name__}，权重: {weight}")
+        if weight > 0:
+            self.scenarios.append(scenario)
+            self.scenario_weights[scenario.__name__] = weight
+            logger.debug(f"添加场景: {scenario.__name__}，权重: {weight}")
         
     def add_scenarios(self, scenarios: List[Callable], weight: int = 1):
         """

@@ -188,7 +188,7 @@ python -m src.main --batch 50
 
 **Linux/macOS**:
 ```bash
-# 启动定时任务（默认60秒间隔）
+# 启动定时任务（默认30秒间隔）
 ./start_timed_task.sh
 
 # 指定间隔时间和日志级别
@@ -203,7 +203,7 @@ python -m src.main --batch 50
 
 **Windows**:
 ```cmd
-# 启动定时任务（默认60秒间隔）
+# 启动定时任务（默认30秒间隔）
 start_timed_task.bat
 
 # 指定间隔时间和日志级别
@@ -229,11 +229,11 @@ start_timed_task.bat -h
 #### 直接使用Python
 
 ```bash
-# 使用默认间隔（60秒）
+# 使用默认间隔（30秒）
 python -m src.timed_task
 
-# 使用自定义间隔（30秒）
-python -m src.timed_task --interval 30
+# 使用自定义间隔（60秒）
+python -m src.timed_task --interval 60
 
 # 使用自定义日志级别
 python -m src.timed_task --log-level DEBUG

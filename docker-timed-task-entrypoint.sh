@@ -32,8 +32,8 @@ python -c "import requests; r = requests.get('$TS_BASE_URL', timeout=5); print(f
 
 # 设置默认的间隔时间（如果未指定）
 if [ -z "$TS_TIMED_TASK_INTERVAL" ]; then
-    export TS_TIMED_TASK_INTERVAL=60
-    echo "未设置TS_TIMED_TASK_INTERVAL，使用默认值: 60秒"
+    export TS_TIMED_TASK_INTERVAL=30
+    echo "未设置TS_TIMED_TASK_INTERVAL，使用默认值: 30秒"
 fi
 
 # 启动定时任务

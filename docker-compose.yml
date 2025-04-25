@@ -1,30 +1,30 @@
 version: '3.8'
 
 services:
-  train-ticket-auto-query:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: train-ticket-auto-query
-    ports:
-      - "30001:5001"
-    volumes:
-      # 可选：挂载日志目录到宿主机
-      - ./logs:/app/logs
-    environment:
-      # 这里可以覆盖默认环境变量
-       TS_BASE_URL: "http://101.47.134.73:32677"
-      # TS_USERNAME: "你的用户名"
-      # TS_PASSWORD: "你的密码"
-      # TS_LOG_LEVEL: "DEBUG"  # 设置为DEBUG查看更详细日志
-       TZ: "Asia/Shanghai"  # 设置时区为东八区（上海）
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
+#  train-ticket-auto-query:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    container_name: train-ticket-auto-query
+#    ports:
+#      - "30001:5001"
+#    volumes:
+#      # 可选：挂载日志目录到宿主机
+#      - ./logs:/app/logs
+#    environment:
+#      # 这里可以覆盖默认环境变量
+#       TS_BASE_URL: "http://101.47.134.73:32677"
+#      # TS_USERNAME: "你的用户名"
+#      # TS_PASSWORD: "你的密码"
+#      # TS_LOG_LEVEL: "DEBUG"  # 设置为DEBUG查看更详细日志
+#       TZ: "Asia/Shanghai"  # 设置时区为东八区（上海）
+#    restart: unless-stopped
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 5s
       
   train-ticket-timed-task:
     build:
@@ -39,7 +39,7 @@ services:
       TS_BASE_URL: "http://101.47.134.73:32677"
       # TS_USERNAME: "你的用户名"
       # TS_PASSWORD: "你的密码"
-      TS_TIMED_TASK_INTERVAL: "60"  # 定时任务执行间隔（秒）
+      TS_TIMED_TASK_INTERVAL: "30"  # 定时任务执行间隔（秒）
       # 不再使用token刷新机制，改为每次完成所有场景后退出登录，下次循环开始时重新登录
       # TS_TOKEN_REFRESH_INTERVAL: "1800"  # token刷新间隔，默认30分钟
       TS_LOG_LEVEL: "INFO"  # 日志级别
