@@ -6,7 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
 # 默认设置
-INTERVAL=30
+INTERVAL=10
 LOG_LEVEL="INFO"
 SERVER=""
 USERNAME=""

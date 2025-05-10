@@ -80,7 +80,7 @@ class TimedTaskRunner:
 
     def __init__(
         self, 
-        interval_seconds=30,
+        interval_seconds=10,
         server_url=None,
         username=None,
         password=None,
@@ -257,8 +257,8 @@ def parse_args():
     parser.add_argument(
         "--interval",
         type=int,
-        default=30,
-        help="任务执行间隔（秒），默认为30秒",
+        default=10,
+        help="任务执行间隔（秒），默认为10秒",
     )
 
     parser.add_argument(

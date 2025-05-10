@@ -69,13 +69,13 @@ SCENARIO_MAP = {
 ALL_SCENARIOS = [
     query_high_speed_ticket_scenario,
     query_normal_ticket_scenario,
-    query_food_scenario,
-    query_ticket_parallel_scenario,
-    query_and_pay_ticket,
-    query_and_cancel_ticket,
-    query_and_consign,
-    query_and_book_ticket_scenario,
-    query_and_rebook_ticket_scenario
+    # query_food_scenario,
+    # query_ticket_parallel_scenario,
+    # query_and_pay_ticket,
+    # query_and_cancel_ticket,
+    # query_and_consign,
+    # query_and_book_ticket_scenario,
+    # query_and_rebook_ticket_scenario
 ]
 
 # 场景权重配置
