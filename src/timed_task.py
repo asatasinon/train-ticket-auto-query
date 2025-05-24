@@ -65,8 +65,8 @@ SCENARIOS = [
     ("查询高铁票", query_high_speed_ticket_scenario),
     ("查询普通列车票", query_normal_ticket_scenario),
     # 已移除：("并行查询车票", query_ticket_parallel_scenario)
-    ("查询食品", query_food_scenario),
-    ("预订车票", query_and_book_ticket_scenario),
+    # ("查询食品", query_food_scenario),
+    # ("预订车票", query_and_book_ticket_scenario),
     #("支付订单", query_and_pay_ticket),
     #("添加托运信息", query_and_consign),
     #("取票", query_and_collect_ticket),
